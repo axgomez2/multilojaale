@@ -19,10 +19,10 @@ class DeveloperUserSeeder extends Seeder
         // Cria o usuário desenvolvedor com role de admin (66)
         $user = User::create([
             'id' => (string) Str::uuid(),
-            'name' => 'Developer',
-            'email' => 'dev@exemplo.com',
+            'name' => 'Alexandre Gomes',
+            'email' => 'axgomezprogramador@gmail.com',
             'email_verified_at' => now(),
-            'password' => Hash::make('password'), // Senha padrão que deve ser alterada
+            'password' => Hash::make('Ale123!@'), // Senha padrão
             'role' => 66, // Role de administrador
             'remember_token' => Str::random(10),
         ]);
@@ -34,8 +34,8 @@ class DeveloperUserSeeder extends Seeder
         ]);
         
         $this->command->info('Usuário desenvolvedor criado com sucesso!');
-        $this->command->info('Email: dev@exemplo.com');
-        $this->command->info('Senha: password');
-        $this->command->info('LEMBRE-SE DE ALTERAR A SENHA EM PRODUÇÃO!');
+        $this->command->info('Email: axgomezprogramador@gmail.com');
+        $this->command->info('Senha: Ale123!@');
+        $this->command->info('Credenciais configuradas para o ambiente.');
     }
 }
