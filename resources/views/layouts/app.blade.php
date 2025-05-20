@@ -4,8 +4,21 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        
+        @php
+            $store = \App\Models\StoreInformation::getInstance();
+            $pageTitle = $title ?? $store->name ?? config('app.name', 'Laravel');
+        @endphp
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ $pageTitle }}</title>
+        
+        <!-- Favicon -->
+        @if($store->favicon_url)
+        <link rel="icon" href="{{ $store->favicon_url }}" type="image/x-icon">
+        @endif
+        
+        <!-- Meta Tags -->
+        <meta name="description" content="{{ $store->description }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -24,7 +37,11 @@
                             <!-- Logo -->
                             <div class="flex-shrink-0 flex items-center">
                                 <a href="{{ route('dashboard') }}" wire:navigate>
-                                    <x-app-logo />
+                                    @if($store->logo_url)
+                                        <img src="{{ $store->logo_url }}" alt="{{ $store->name }}" class="h-8">
+                                    @else
+                                        <x-app-logo />
+                                    @endif
                                 </a>
                             </div>
                         </div>

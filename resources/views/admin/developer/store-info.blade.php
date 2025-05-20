@@ -1,4 +1,4 @@
-<x-layouts.admin title="Informações da Loja">
+<x-admin-layout title="Informações da Loja">
     <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-md overflow-hidden">
         <div class="p-6">
             <h1 class="text-2xl font-bold mb-4 text-zinc-900 dark:text-zinc-100">Informações da Loja</h1>
@@ -10,20 +10,20 @@
             </div>
             @endif
             
-            <form action="{{ route('admin.developer.store.update') }}" method="POST">
+            <form action="{{ route('admin.developer.store.update') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 
                 <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
                     <!-- Nome da Loja -->
                     <div class="md:col-span-3">
-                        <label for="store_name" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="name" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Nome da Loja *
                         </label>
                         <input 
                             type="text" 
-                            name="store_name" 
-                            id="store_name" 
-                            value="{{ old('store_name', $settings['store_name']) }}" 
+                            name="name" 
+                            id="name" 
+                            value="{{ old('name', $store->name) }}" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                             required
                         >
@@ -34,29 +34,29 @@
                     
                     <!-- Tipo de Documento -->
                     <div class="md:col-span-1">
-                        <label for="store_document_type" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="document_type" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Tipo
                         </label>
                         <select 
-                            name="store_document_type" 
-                            id="store_document_type" 
+                            name="document_type" 
+                            id="document_type" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                         >
-                            <option value="cnpj" {{ old('store_document_type', $settings['store_document_type']) == 'cnpj' ? 'selected' : '' }}>CNPJ</option>
-                            <option value="cpf" {{ old('store_document_type', $settings['store_document_type']) == 'cpf' ? 'selected' : '' }}>CPF</option>
+                            <option value="cnpj" {{ old('document_type', $store->document_type) == 'cnpj' ? 'selected' : '' }}>CNPJ</option>
+                            <option value="cpf" {{ old('document_type', $store->document_type) == 'cpf' ? 'selected' : '' }}>CPF</option>
                         </select>
                     </div>
                     
                     <!-- Documento (CNPJ/CPF) -->
                     <div class="md:col-span-2">
-                        <label for="store_document" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="document" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Documento (CNPJ/CPF)
                         </label>
                         <input 
                             type="text" 
-                            name="store_document" 
-                            id="store_document" 
-                            value="{{ old('store_document', $settings['store_document']) }}" 
+                            name="document" 
+                            id="document" 
+                            value="{{ old('document', $store->document) }}" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                         >
                         @error('store_document')
@@ -66,15 +66,15 @@
                     
                     <!-- Descrição -->
                     <div class="md:col-span-6">
-                        <label for="store_description" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="description" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Descrição da Loja
                         </label>
                         <textarea 
-                            name="store_description" 
-                            id="store_description" 
+                            name="description" 
+                            id="description" 
                             rows="3" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
-                        >{{ old('store_description', $settings['store_description']) }}</textarea>
+                        >{{ old('description', $store->description) }}</textarea>
                         @error('store_description')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -82,15 +82,15 @@
                     
                     <!-- CEP -->
                     <div class="md:col-span-2">
-                        <label for="store_zipcode" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="zipcode" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             CEP
                         </label>
                         <div class="flex">
                             <input 
                                 type="text" 
-                                name="store_zipcode" 
-                                id="store_zipcode" 
-                                value="{{ old('store_zipcode', $settings['store_zipcode']) }}" 
+                                name="zipcode" 
+                                id="zipcode" 
+                                value="{{ old('zipcode', $store->zipcode) }}" 
                                 class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                                 maxlength="9"
                             >
@@ -109,14 +109,14 @@
                     
                     <!-- Endereço -->
                     <div class="md:col-span-4">
-                        <label for="store_address" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="address" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Endereço
                         </label>
                         <input 
                             type="text" 
-                            name="store_address" 
-                            id="store_address" 
-                            value="{{ old('store_address', $settings['store_address']) }}" 
+                            name="address" 
+                            id="address" 
+                            value="{{ old('address', $store->address) }}" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                         >
                         @error('store_address')
@@ -126,14 +126,14 @@
                     
                     <!-- Bairro -->
                     <div class="md:col-span-3">
-                        <label for="store_neighborhood" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="neighborhood" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Bairro
                         </label>
                         <input 
                             type="text" 
-                            name="store_neighborhood" 
-                            id="store_neighborhood" 
-                            value="{{ old('store_neighborhood', $settings['store_neighborhood']) }}" 
+                            name="neighborhood" 
+                            id="neighborhood" 
+                            value="{{ old('neighborhood', $store->neighborhood) }}" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                         >
                         @error('store_neighborhood')
@@ -143,42 +143,42 @@
                     
                     <!-- UF -->
                     <div class="md:col-span-1">
-                        <label for="store_state" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="state" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             UF
                         </label>
                         <select 
-                            name="store_state" 
-                            id="store_state" 
+                            name="state" 
+                            id="state" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                         >
                             <option value="">Selecione...</option>
-                            <option value="AC" {{ old('store_state', $settings['store_state']) == 'AC' ? 'selected' : '' }}>AC</option>
-                            <option value="AL" {{ old('store_state', $settings['store_state']) == 'AL' ? 'selected' : '' }}>AL</option>
-                            <option value="AP" {{ old('store_state', $settings['store_state']) == 'AP' ? 'selected' : '' }}>AP</option>
-                            <option value="AM" {{ old('store_state', $settings['store_state']) == 'AM' ? 'selected' : '' }}>AM</option>
-                            <option value="BA" {{ old('store_state', $settings['store_state']) == 'BA' ? 'selected' : '' }}>BA</option>
-                            <option value="CE" {{ old('store_state', $settings['store_state']) == 'CE' ? 'selected' : '' }}>CE</option>
-                            <option value="DF" {{ old('store_state', $settings['store_state']) == 'DF' ? 'selected' : '' }}>DF</option>
-                            <option value="ES" {{ old('store_state', $settings['store_state']) == 'ES' ? 'selected' : '' }}>ES</option>
-                            <option value="GO" {{ old('store_state', $settings['store_state']) == 'GO' ? 'selected' : '' }}>GO</option>
-                            <option value="MA" {{ old('store_state', $settings['store_state']) == 'MA' ? 'selected' : '' }}>MA</option>
-                            <option value="MT" {{ old('store_state', $settings['store_state']) == 'MT' ? 'selected' : '' }}>MT</option>
-                            <option value="MS" {{ old('store_state', $settings['store_state']) == 'MS' ? 'selected' : '' }}>MS</option>
-                            <option value="MG" {{ old('store_state', $settings['store_state']) == 'MG' ? 'selected' : '' }}>MG</option>
-                            <option value="PA" {{ old('store_state', $settings['store_state']) == 'PA' ? 'selected' : '' }}>PA</option>
-                            <option value="PB" {{ old('store_state', $settings['store_state']) == 'PB' ? 'selected' : '' }}>PB</option>
-                            <option value="PR" {{ old('store_state', $settings['store_state']) == 'PR' ? 'selected' : '' }}>PR</option>
-                            <option value="PE" {{ old('store_state', $settings['store_state']) == 'PE' ? 'selected' : '' }}>PE</option>
-                            <option value="PI" {{ old('store_state', $settings['store_state']) == 'PI' ? 'selected' : '' }}>PI</option>
-                            <option value="RJ" {{ old('store_state', $settings['store_state']) == 'RJ' ? 'selected' : '' }}>RJ</option>
-                            <option value="RN" {{ old('store_state', $settings['store_state']) == 'RN' ? 'selected' : '' }}>RN</option>
-                            <option value="RS" {{ old('store_state', $settings['store_state']) == 'RS' ? 'selected' : '' }}>RS</option>
-                            <option value="RO" {{ old('store_state', $settings['store_state']) == 'RO' ? 'selected' : '' }}>RO</option>
-                            <option value="RR" {{ old('store_state', $settings['store_state']) == 'RR' ? 'selected' : '' }}>RR</option>
-                            <option value="SC" {{ old('store_state', $settings['store_state']) == 'SC' ? 'selected' : '' }}>SC</option>
-                            <option value="SP" {{ old('store_state', $settings['store_state']) == 'SP' ? 'selected' : '' }}>SP</option>
-                            <option value="SE" {{ old('store_state', $settings['store_state']) == 'SE' ? 'selected' : '' }}>SE</option>
-                            <option value="TO" {{ old('store_state', $settings['store_state']) == 'TO' ? 'selected' : '' }}>TO</option>
+                            <option value="AC" {{ old('state', $store->state) == 'AC' ? 'selected' : '' }}>AC</option>
+                            <option value="AL" {{ old('state', $store->state) == 'AL' ? 'selected' : '' }}>AL</option>
+                            <option value="AP" {{ old('state', $store->state) == 'AP' ? 'selected' : '' }}>AP</option>
+                            <option value="AM" {{ old('state', $store->state) == 'AM' ? 'selected' : '' }}>AM</option>
+                            <option value="BA" {{ old('state', $store->state) == 'BA' ? 'selected' : '' }}>BA</option>
+                            <option value="CE" {{ old('state', $store->state) == 'CE' ? 'selected' : '' }}>CE</option>
+                            <option value="DF" {{ old('state', $store->state) == 'DF' ? 'selected' : '' }}>DF</option>
+                            <option value="ES" {{ old('state', $store->state) == 'ES' ? 'selected' : '' }}>ES</option>
+                            <option value="GO" {{ old('state', $store->state) == 'GO' ? 'selected' : '' }}>GO</option>
+                            <option value="MA" {{ old('state', $store->state) == 'MA' ? 'selected' : '' }}>MA</option>
+                            <option value="MT" {{ old('state', $store->state) == 'MT' ? 'selected' : '' }}>MT</option>
+                            <option value="MS" {{ old('state', $store->state) == 'MS' ? 'selected' : '' }}>MS</option>
+                            <option value="MG" {{ old('state', $store->state) == 'MG' ? 'selected' : '' }}>MG</option>
+                            <option value="PA" {{ old('state', $store->state) == 'PA' ? 'selected' : '' }}>PA</option>
+                            <option value="PB" {{ old('state', $store->state) == 'PB' ? 'selected' : '' }}>PB</option>
+                            <option value="PR" {{ old('state', $store->state) == 'PR' ? 'selected' : '' }}>PR</option>
+                            <option value="PE" {{ old('state', $store->state) == 'PE' ? 'selected' : '' }}>PE</option>
+                            <option value="PI" {{ old('state', $store->state) == 'PI' ? 'selected' : '' }}>PI</option>
+                            <option value="RJ" {{ old('state', $store->state) == 'RJ' ? 'selected' : '' }}>RJ</option>
+                            <option value="RN" {{ old('state', $store->state) == 'RN' ? 'selected' : '' }}>RN</option>
+                            <option value="RS" {{ old('state', $store->state) == 'RS' ? 'selected' : '' }}>RS</option>
+                            <option value="RO" {{ old('state', $store->state) == 'RO' ? 'selected' : '' }}>RO</option>
+                            <option value="RR" {{ old('state', $store->state) == 'RR' ? 'selected' : '' }}>RR</option>
+                            <option value="SC" {{ old('state', $store->state) == 'SC' ? 'selected' : '' }}>SC</option>
+                            <option value="SP" {{ old('state', $store->state) == 'SP' ? 'selected' : '' }}>SP</option>
+                            <option value="SE" {{ old('state', $store->state) == 'SE' ? 'selected' : '' }}>SE</option>
+                            <option value="TO" {{ old('state', $store->state) == 'TO' ? 'selected' : '' }}>TO</option>
                         </select>
                         @error('store_state')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -187,14 +187,14 @@
                     
                     <!-- Telefone -->
                     <div class="md:col-span-2">
-                        <label for="store_phone" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="phone" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Telefone
                         </label>
                         <input 
                             type="text" 
-                            name="store_phone" 
-                            id="store_phone" 
-                            value="{{ old('store_phone', $settings['store_phone']) }}" 
+                            name="phone" 
+                            id="phone" 
+                            value="{{ old('phone', $store->phone) }}" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                         >
                         @error('store_phone')
@@ -204,19 +204,71 @@
                     
                     <!-- Email -->
                     <div class="md:col-span-3">
-                        <label for="store_email" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <label for="email" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                             Email de Contato
                         </label>
                         <input 
                             type="email" 
-                            name="store_email" 
-                            id="store_email" 
-                            value="{{ old('store_email', $settings['store_email']) }}" 
+                            name="email" 
+                            id="email" 
+                            value="{{ old('email', $store->email) }}" 
                             class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
                         >
                         @error('store_email')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                    </div>
+                    
+                    <!-- Logo da Loja -->
+                    <div class="md:col-span-3">
+                        <label for="logo" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                            Logo da Loja
+                        </label>
+                        
+                        <div class="mb-3">
+                            @if($store->logo_path)
+                                <div class="mb-2 p-2 border border-zinc-200 dark:border-zinc-700 rounded-lg inline-block">
+                                    <img src="{{ $store->logo_url }}" alt="Logo atual" class="max-h-24">
+                                </div>
+                            @endif
+                            
+                            <input 
+                                type="file" 
+                                name="logo" 
+                                id="logo" 
+                                accept="image/*"
+                                class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
+                            >
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                Recomendado: PNG ou SVG, tamanho máximo de 2MB. Será redimensionado automaticamente.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Favicon -->
+                    <div class="md:col-span-3">
+                        <label for="favicon" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                            Favicon
+                        </label>
+                        
+                        <div class="mb-3">
+                            @if($store->favicon_path)
+                                <div class="mb-2 p-2 border border-zinc-200 dark:border-zinc-700 rounded-lg inline-block">
+                                    <img src="{{ $store->favicon_url }}" alt="Favicon atual" class="max-h-10">
+                                </div>
+                            @endif
+                            
+                            <input 
+                                type="file" 
+                                name="favicon" 
+                                id="favicon" 
+                                accept="image/*"
+                                class="w-full border border-zinc-300 dark:border-zinc-600 rounded-md py-2 px-3 dark:bg-zinc-900"
+                            >
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                Recomendado: ICO, PNG ou SVG, tamanho máximo de 1MB. Será redimensionado automaticamente para 64x64px.
+                            </p>
+                        </div>
                     </div>
                 </div>
                 
@@ -228,13 +280,13 @@
             </form>
         </div>
     </div>
-</x-layouts.admin>
+</x-admin-layout>
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Função para formatar o CEP (adiciona hífen)
-        const cepInput = document.getElementById('store_zipcode');
+        const cepInput = document.getElementById('zipcode');
         cepInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 5) {
@@ -244,8 +296,8 @@
         });
         
         // Formatar documento conforme tipo (CPF ou CNPJ)
-        const documentInput = document.getElementById('store_document');
-        const documentTypeSelect = document.getElementById('store_document_type');
+        const documentInput = document.getElementById('document');
+        const documentTypeSelect = document.getElementById('document_type');
         
         function formatDocument() {
             let value = documentInput.value.replace(/\D/g, '');
@@ -303,9 +355,9 @@
                     }
                     
                     // Preenche os campos com os dados retornados
-                    document.getElementById('store_address').value = data.logradouro;
-                    document.getElementById('store_neighborhood').value = data.bairro;
-                    document.getElementById('store_state').value = data.uf;
+                    document.getElementById('address').value = data.logradouro;
+                    document.getElementById('neighborhood').value = data.bairro;
+                    document.getElementById('state').value = data.uf;
                 })
                 .catch(error => {
                     console.error('Erro ao buscar CEP:', error);

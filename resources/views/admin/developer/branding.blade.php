@@ -1,4 +1,4 @@
-<x-layouts.admin title="Identidade Visual">
+<x-admin-layout title="Identidade Visual">
     <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-md overflow-hidden">
         <div class="p-6">
             <h1 class="text-2xl font-bold mb-4 text-zinc-900 dark:text-zinc-100">Identidade Visual do Site</h1>
@@ -20,8 +20,8 @@
                         
                         <div class="mb-4">
                             <div class="h-40 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-4 p-4">
-                                @if($logo)
-                                    <img src="{{ Storage::url($logo) }}" alt="Logo do site" class="max-h-32 max-w-full">
+                                @if($store->logo_path)
+                                    <img src="{{ $store->logo_url }}" alt="Logo do site" class="max-h-32 max-w-full">
                                 @else
                                     <div class="text-zinc-400 text-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,8 +53,8 @@
                         
                         <div class="mb-4">
                             <div class="h-40 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-4 p-4">
-                                @if($favicon)
-                                    <img src="{{ Storage::url($favicon) }}" alt="Favicon do site" class="max-h-16 border border-zinc-200 dark:border-zinc-700 p-1 rounded">
+                                @if($store->favicon_path)
+                                    <img src="{{ $store->favicon_url }}" alt="Favicon do site" class="max-h-16 border border-zinc-200 dark:border-zinc-700 p-1 rounded">
                                 @else
                                     <div class="text-zinc-400 text-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,4 +111,4 @@
             </div>
         </div>
     </div>
-</x-layouts.admin>
+</x-admin-layout>

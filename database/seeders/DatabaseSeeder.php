@@ -19,9 +19,14 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
         
-        // Executa o seeder do desenvolvedor
+        // Executa todos os seeders do sistema
         $this->call([
             DeveloperUserSeeder::class,
+            BrandSeeder::class,
+            DimensionSeeder::class,
+            EquipmentCategorySeeder::class,
+            ProductTypeSeeder::class,
+            WeightSeeder::class,
         ]);
     }
 }

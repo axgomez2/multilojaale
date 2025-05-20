@@ -1,4 +1,4 @@
-<div class="bg-zinc-800 shadow-md py-3 px-6 ml-64 flex justify-between items-center">
+<div class="bg-zinc-800 shadow-md py-3 px-6  flex justify-between items-center">
     <div class="flex items-center">
         <h1 class="text-white text-lg font-medium">{{ $title ?? 'Dashboard' }}</h1>
     </div>

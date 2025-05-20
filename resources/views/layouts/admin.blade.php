@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ $title ?? config('app.name', 'Laravel') }} - Admin</title>
+
+    <!-- Favicon -->
+    @if($favicon = \App\Models\StoreInformation::getInstance()->favicon_url)
+    <link rel="icon" href="{{ $favicon }}" type="image/x-icon">
+    @endif
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -19,7 +24,7 @@
         <!-- Sidebar Component -->
         <x-admin.sidebar />
         
-        <!-- Page Content -->
+        <!-- Page Content --> 
         <div class="ml-64">
             <!-- Topbar Component -->
             <x-admin.topbar :title="$title ?? 'Dashboard'" />
