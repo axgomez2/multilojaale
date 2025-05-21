@@ -1,6 +1,6 @@
 <x-app-layout>
 <div class="bg-gray-50 min-h-screen">
-    <x-site.navbar :store="$store" />
+    <x-site.navbar2 :store="$store" />
     
     <main class="py-12">
 

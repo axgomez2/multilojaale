@@ -11,7 +11,9 @@ use App\Http\Controllers\Admin\VinylImageController;
 use App\Http\Controllers\YouTubeController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\MidiaStatusController;
-use App\Http\Controllers\Admin\CoverStatusController;  
+use App\Http\Controllers\Admin\CoverStatusController;
+use App\Http\Controllers\Admin\ReportsController;
+use App\Http\Controllers\Admin\PosSalesController;  
 
 // Todas as rotas neste arquivo já estão com prefixo 'admin' e middleware 'auth' e 'admin'
 // Dashboard
@@ -78,6 +80,25 @@ Route::prefix('cover-status')->group(function () {
     Route::get('/{coverStatus}/edit', [CoverStatusController::class, 'edit'])->name('admin.cover-status.edit');
     Route::put('/{coverStatus}', [CoverStatusController::class, 'update'])->name('admin.cover-status.update');
     Route::delete('/{coverStatus}', [CoverStatusController::class, 'destroy'])->name('admin.cover-status.destroy');
+});
+
+// Relatórios
+Route::prefix('relatorios')->group(function () {
+    Route::get('/', [ReportsController::class, 'index'])->name('admin.reports.index');
+    Route::get('/discos', [ReportsController::class, 'vinyl'])->name('admin.reports.vinyl');
+});
+
+// PDV - Point of Sale (Vendas Diretas)
+Route::prefix('pdv')->group(function () {
+    Route::get('/', [PosSalesController::class, 'index'])->name('admin.pos.index');
+    Route::get('/nova-venda', [PosSalesController::class, 'create'])->name('admin.pos.create');
+    Route::post('/venda', [PosSalesController::class, 'store'])->name('admin.pos.store');
+    Route::get('/venda/{posSale}', [PosSalesController::class, 'show'])->name('admin.pos.show');
+    Route::get('/vendas', [PosSalesController::class, 'list'])->name('admin.pos.list');
+    
+    // API para autocompletar
+    Route::get('/buscar-usuarios', [PosSalesController::class, 'searchUsers'])->name('admin.pos.search-users');
+    Route::get('/buscar-discos', [PosSalesController::class, 'searchVinyls'])->name('admin.pos.search-vinyls');
 });
 
 // Gerenciamento de fornecedores
