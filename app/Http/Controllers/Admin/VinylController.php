@@ -569,13 +569,30 @@ class VinylController extends Controller
     {
         try {
             $vinylMaster = VinylMaster::with('vinylSec.categories', 'tracks')->findOrFail($id);
+            
+            // Carregando dados das tabelas relacionadas
             $weights = \App\Models\Weight::all();
             $dimensions = \App\Models\Dimension::all();
             $categories = \App\Models\CatStyleShop::all();
+            $midiaStatuses = \App\Models\MidiaStatus::orderBy('title')->get();
+            $coverStatuses = \App\Models\CoverStatus::orderBy('title')->get();
+            $suppliers = \App\Models\Supplier::orderBy('name')->get();
+            
+            // Categorias selecionadas (se existirem)
             $selectedCategories = $vinylMaster->vinylSec ? $vinylMaster->vinylSec->categories->pluck('id')->toArray() : [];
             $tracks = $vinylMaster->tracks;
 
-            return view('admin.vinyls.complete', compact('vinylMaster', 'weights', 'dimensions', 'categories', 'selectedCategories', 'tracks'));
+            return view('admin.vinyls.complete', compact(
+                'vinylMaster',
+                'weights',
+                'dimensions',
+                'categories',
+                'selectedCategories',
+                'tracks',
+                'midiaStatuses',
+                'coverStatuses',
+                'suppliers'
+            ));
         } catch (\Exception $e) {
             Log::error('Error loading vinyl completion form: ' . $e->getMessage());
             return redirect()->route('admin.vinyls.index')->with('error', 'Não foi possível carregar o formulário de finalização do vinyl. Por favor, tente novamente.');
@@ -588,9 +605,13 @@ class VinylController extends Controller
         $validatedData = $request->validate([
             'catalog_number'       => 'nullable|string',
             'barcode'              => 'nullable|string',
-            'weight_id'            => 'required|exists:weights,id',
-            'dimension_id'         => 'required|exists:dimensions,id',
-            'quantity'             => 'required|integer|min:0',
+            'internal_code'        => 'nullable|string',
+            'weight_id'            => 'nullable|exists:weights,id',
+            'dimension_id'         => 'nullable|exists:dimensions,id',
+            'midia_status_id'      => 'nullable|exists:midia_status,id',
+            'cover_status_id'      => 'nullable|exists:cover_status,id',
+            'supplier_id'          => 'nullable|exists:suppliers,id',
+            'stock'                => 'required|integer|min:0',
             'price'                => 'required|numeric|min:0',
             'format'               => 'nullable|string',
             'num_discs'            => 'required|integer|min:1',
@@ -602,8 +623,6 @@ class VinylController extends Controller
             'promotional_price'    => 'nullable|numeric|min:0',
             'is_promotional'       => 'required|boolean',
             'in_stock'             => 'required|boolean',
-            'cover_status'         => 'nullable|in:mint,near_mint,very_good,good,fair,poor,generic',
-            'midia_status'         => 'nullable|in:mint,near_mint,very_good,good,fair,poor',
             'track_youtube_urls'   => 'nullable|array',
             'track_youtube_urls.*' => 'nullable|url',
             'category_ids'         => 'required|array',
@@ -612,14 +631,61 @@ class VinylController extends Controller
 
         DB::beginTransaction();
         try {
-            // Cria o VinylSec e vincula ao VinylMaster
-            $vinylSec = new VinylSec();
-            $vinylSec->fill($validatedData);
-            $vinylSec->vinyl_master_id = $vinylMaster->id;
-            $vinylSec->save();
+            // Preparar os dados para o VinylSec
+            $vinylSecData = [
+                'vinyl_master_id' => $vinylMaster->id,
+                'catalog_number' => $validatedData['catalog_number'] ?? null,
+                'barcode' => $validatedData['barcode'] ?? null,
+                'internal_code' => $validatedData['internal_code'] ?? null,
+                'weight_id' => $validatedData['weight_id'] ?? null,
+                'dimension_id' => $validatedData['dimension_id'] ?? null,
+                'midia_status_id' => $validatedData['midia_status_id'] ?? null,
+                'cover_status_id' => $validatedData['cover_status_id'] ?? null,
+                'supplier_id' => $validatedData['supplier_id'] ?? null,
+                'stock' => $validatedData['stock'] ?? 0,
+                'price' => $validatedData['price'],
+                'format' => $validatedData['format'] ?? null,
+                'num_discs' => $validatedData['num_discs'] ?? 1,
+                'speed' => $validatedData['speed'] ?? null,
+                'edition' => $validatedData['edition'] ?? null,
+                'notes' => $validatedData['notes'] ?? null,
+                'is_new' => $validatedData['is_new'] ?? true,
+                'buy_price' => $validatedData['buy_price'] ?? null,
+                'promotional_price' => $validatedData['promotional_price'] ?? null,
+                'is_promotional' => $validatedData['is_promotional'] ?? false,
+                'in_stock' => $validatedData['in_stock'] ?? true
+            ];
+            
+            // Verifica se já existe um VinylSec para este VinylMaster
+            $vinylSec = VinylSec::where('vinyl_master_id', $vinylMaster->id)->first();
+            
+            if ($vinylSec) {
+                // Se já existe, atualiza
+                // Certifique-se que os campos promocionais são mantidos se não forem fornecidos
+                if (!isset($vinylSecData['promo_starts_at']) && $vinylSec->promo_starts_at) {
+                    $vinylSecData['promo_starts_at'] = $vinylSec->promo_starts_at;
+                }
+                
+                if (!isset($vinylSecData['promo_ends_at']) && $vinylSec->promo_ends_at) {
+                    $vinylSecData['promo_ends_at'] = $vinylSec->promo_ends_at;
+                }
+                
+                $vinylSec->update($vinylSecData);
+            } else {
+                // Se não existe, cria um novo
+                // Se não está em promoção, garantimos que as datas sejam nulas
+                if (!isset($vinylSecData['is_promotional']) || !$vinylSecData['is_promotional']) {
+                    $vinylSecData['promo_starts_at'] = null;
+                    $vinylSecData['promo_ends_at'] = null;
+                }
+                
+                $vinylSec = VinylSec::create($vinylSecData);
+            }
 
-            // Sincroniza as categorias
-            $vinylMaster->catStyleShops()->sync($validatedData['category_ids']);
+            // Sincroniza as categorias - categorias pertencem ao VinylMaster, não ao VinylSec
+            if (isset($validatedData['category_ids'])) {
+                $vinylMaster->categories()->sync($validatedData['category_ids']);
+            }
 
             // Atualiza as URLs do YouTube dos tracks, se enviadas
             if (isset($validatedData['track_youtube_urls'])) {
@@ -638,7 +704,20 @@ class VinylController extends Controller
                              ->with('success', 'Vinyl finalizado com sucesso.');
         } catch (\Exception $e) {
             DB::rollBack();
+            // Log mais detalhado do erro
             Log::error('Error completing vinyl record: ' . $e->getMessage());
+            Log::error('Error trace: ' . $e->getTraceAsString());
+            
+            // Verifica se estamos em ambiente de desenvolvimento
+            if (config('app.debug')) {
+                return redirect()->back()->withInput()
+                                 ->withErrors([
+                                    'error' => 'Erro ao salvar o vinyl: ' . $e->getMessage(),
+                                    'file' => $e->getFile(),
+                                    'line' => $e->getLine()
+                                 ]);
+            }
+            
             return redirect()->back()->withInput()
                              ->withErrors(['error' => 'Ocorreu um erro ao salvar o vinyl. Por favor, tente novamente.']);
         }

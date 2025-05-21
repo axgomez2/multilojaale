@@ -14,7 +14,7 @@ class CoverStatus extends Model
      *
      * @var string
      */
-    protected $table = 'cover_statuses';
+    protected $table = 'cover_status';
     
     /**
      * Os atributos que são atribuíveis em massa.
@@ -22,8 +22,7 @@ class CoverStatus extends Model
      * @var array
      */
     protected $fillable = [
-        'name',
-        'slug',
+        'title',
         'description',
         'color_code'
     ];

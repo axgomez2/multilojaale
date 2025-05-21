@@ -8,9 +8,9 @@ use App\Http\Controllers\Admin\DeveloperController;
 use App\Http\Controllers\Admin\EquipmentController;
 use App\Http\Controllers\Admin\TrackController;
 use App\Http\Controllers\Admin\VinylImageController;
-use App\Http\Controllers\Admin\YouTubeController;
+use App\Http\Controllers\YouTubeController;
 use App\Http\Controllers\Admin\SupplierController;
-use App\Http\Controllers\Admin\MediaStatusController;
+use App\Http\Controllers\Admin\MidiaStatusController;
 use App\Http\Controllers\Admin\CoverStatusController;  
 
 // Todas as rotas neste arquivo já estão com prefixo 'admin' e middleware 'auth' e 'admin'
@@ -20,7 +20,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.das
 // Gerenciamento de Discos
 Route::prefix('discos')->group(function () {
     // Listagem e operações básicas
-    Route::get('/discos', [VinylController::class, 'index'])->name('admin.vinyls.index');
+    Route::get('/', [VinylController::class, 'index'])->name('admin.vinyls.index');
     Route::get('/adicionar', [VinylController::class, 'create'])->name('admin.vinyls.create');
     Route::post('/salvar', [VinylController::class, 'store'])->name('admin.vinyls.store');
     Route::get('{id}', [VinylController::class, 'show'])->name('admin.vinyls.show');
@@ -47,8 +47,48 @@ Route::prefix('discos')->group(function () {
 
 });
 
-// YouTube API
-Route::post('/youtube/search', [YouTubeController::class, 'search'])->name('youtube.search');
+// YouTube API - acessível sem middleware admin
+Route::match(['get', 'post'], '/youtube/search', [YouTubeController::class, 'search'])->name('youtube.search')->withoutMiddleware(['admin']);
+
+// Gerenciamento de categorias de disco
+Route::prefix('categorias')->group(function () {
+    Route::get('/', [CatStyleShopController::class, 'index'])->name('admin.cat-style-shop.index');
+    Route::get('/create', [CatStyleShopController::class, 'create'])->name('admin.cat-style-shop.create');
+    Route::post('/', [CatStyleShopController::class, 'store'])->name('admin.cat-style-shop.store');
+    Route::get('/{catStyleShop}/edit', [CatStyleShopController::class, 'edit'])->name('admin.cat-style-shop.edit');
+    Route::put('/{catStyleShop}', [CatStyleShopController::class, 'update'])->name('admin.cat-style-shop.update');
+    Route::delete('/{catStyleShop}', [CatStyleShopController::class, 'destroy'])->name('admin.cat-style-shop.destroy');
+});
+
+// Gerenciamento de status de mídia
+Route::prefix('midia-status')->group(function () {
+    Route::get('/', [MidiaStatusController::class, 'index'])->name('admin.midia-status.index');
+    Route::get('/create', [MidiaStatusController::class, 'create'])->name('admin.midia-status.create');
+    Route::post('/', [MidiaStatusController::class, 'store'])->name('admin.midia-status.store');
+    Route::get('/{midiaStatus}/edit', [MidiaStatusController::class, 'edit'])->name('admin.midia-status.edit');
+    Route::put('/{midiaStatus}', [MidiaStatusController::class, 'update'])->name('admin.midia-status.update');
+    Route::delete('/{midiaStatus}', [MidiaStatusController::class, 'destroy'])->name('admin.midia-status.destroy');
+});
+
+// Gerenciamento de status de capa
+Route::prefix('cover-status')->group(function () {
+    Route::get('/', [CoverStatusController::class, 'index'])->name('admin.cover-status.index');
+    Route::get('/create', [CoverStatusController::class, 'create'])->name('admin.cover-status.create');
+    Route::post('/', [CoverStatusController::class, 'store'])->name('admin.cover-status.store');
+    Route::get('/{coverStatus}/edit', [CoverStatusController::class, 'edit'])->name('admin.cover-status.edit');
+    Route::put('/{coverStatus}', [CoverStatusController::class, 'update'])->name('admin.cover-status.update');
+    Route::delete('/{coverStatus}', [CoverStatusController::class, 'destroy'])->name('admin.cover-status.destroy');
+});
+
+// Gerenciamento de fornecedores
+Route::prefix('fornecedores')->group(function () {
+    Route::get('/', [SupplierController::class, 'index'])->name('admin.suppliers.index');
+    Route::get('/create', [SupplierController::class, 'create'])->name('admin.suppliers.create');
+    Route::post('/', [SupplierController::class, 'store'])->name('admin.suppliers.store');
+    Route::get('/{supplier}/edit', [SupplierController::class, 'edit'])->name('admin.suppliers.edit');
+    Route::put('/{supplier}', [SupplierController::class, 'update'])->name('admin.suppliers.update');
+    Route::delete('/{supplier}', [SupplierController::class, 'destroy'])->name('admin.suppliers.destroy');
+});
 
 // Tracks (Faixas de áudio)
 Route::resource('tracks', TrackController::class);
@@ -69,7 +109,7 @@ Route::post('equipment/{equipment}/images', [EquipmentController::class, 'storeI
 Route::resource('suppliers', SupplierController::class);
 
 // Media e Cover Status
-Route::resource('media-status', MediaStatusController::class, ['as' => 'admin']);
+        Route::resource('midia-status', MidiaStatusController::class, ['as' => 'admin']);
 Route::resource('cover-status', CoverStatusController::class, ['as' => 'admin']);
 
 // Área do desenvolvedor

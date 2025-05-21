@@ -18,7 +18,7 @@ class CoverStatusController extends Controller
      */
     public function index()
     {
-        $statuses = CoverStatus::orderBy('name')->paginate(15);
+        $statuses = CoverStatus::orderBy('title')->paginate(15);
         return view('admin.cover-status.index', compact('statuses'));
     }
     
@@ -41,31 +41,28 @@ class CoverStatusController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:50|unique:cover_statuses',
+            'title' => 'required|string|max:50|unique:cover_status',
             'description' => 'nullable|string|max:255',
-            'color_code' => 'nullable|string|max:7',
         ]);
         
         if ($validator->fails()) {
             return redirect()->back()
-                ->with('error', 'Houve um erro ao cadastrar o status de capa')
+                ->with('error', 'Houve um erro ao cadastrar o ESTADO de capa')
                 ->withErrors($validator)
                 ->withInput();
         }
         
         try {
             CoverStatus::create([
-                'name' => $request->name,
-                'slug' => Str::slug($request->name),
-                'description' => $request->description,
-                'color_code' => $request->color_code
+                'title' => $request->title,
+                'description' => $request->description
             ]);
             
             return redirect()->route('admin.cover-status.index')
-                ->with('success', 'Status de capa cadastrado com sucesso');
+                ->with('success', 'ESTADO de capa cadastrado com sucesso');
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Erro ao cadastrar o status de capa: ' . $e->getMessage())
+                ->with('error', 'Erro ao cadastrar o ESTADO de capa: ' . $e->getMessage())
                 ->withInput();
         }
     }
@@ -103,9 +100,9 @@ class CoverStatusController extends Controller
     public function update(Request $request, CoverStatus $coverStatus)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:50|unique:cover_statuses,name,' . $coverStatus->id,
+            'title' => 'required|string|max:50|unique:cover_statuses,title,' . $coverStatus->id,
             'description' => 'nullable|string|max:255',
-            'color_code' => 'nullable|string|max:7',
+            
         ]);
         
         if ($validator->fails()) {
@@ -117,17 +114,15 @@ class CoverStatusController extends Controller
         
         try {
             $coverStatus->update([
-                'name' => $request->name,
-                'slug' => Str::slug($request->name),
+                'title' => $request->title,
                 'description' => $request->description,
-                'color_code' => $request->color_code
             ]);
             
             return redirect()->route('admin.cover-status.index')
-                ->with('success', 'Status de capa atualizado com sucesso');
+                ->with('success', 'ESTADO de capa atualizado com sucesso');
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Erro ao atualizar o status de capa: ' . $e->getMessage())
+                ->with('error', 'Erro ao atualizar o ESTADO de capa: ' . $e->getMessage())
                 ->withInput();
         }
     }
@@ -151,10 +146,10 @@ class CoverStatusController extends Controller
         try {
             $coverStatus->delete();
             return redirect()->route('admin.cover-status.index')
-                ->with('success', 'Status de capa removido com sucesso');
+                ->with('success', 'ESTADO de capa removido com sucesso');
         } catch (\Exception $e) {
             return redirect()->route('admin.cover-status.index')
-                ->with('error', 'Erro ao remover o status de capa: ' . $e->getMessage());
+                ->with('error', 'Erro ao remover o ESTADO de capa: ' . $e->getMessage());
         }
         
         return redirect()->route('admin.cover-status.index');

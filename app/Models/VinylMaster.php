@@ -94,6 +94,12 @@ class VinylMaster extends Model
     {
         return 'slug';
     }
+    
+    public function categories()
+    {
+        return $this->belongsToMany(CatStyleShop::class, 'cat_style_shop_vinyl_master', 'vinyl_master_id', 'cat_style_shop_id')
+                    ->withTimestamps();
+    }
 
     public function saveExternalImage($url)
     {

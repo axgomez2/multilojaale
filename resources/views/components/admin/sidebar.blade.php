@@ -25,6 +25,34 @@
         </div>
         
         <div class="mb-6">
+            <p class="text-xs uppercase text-zinc-500 mb-2 px-4">Cadastros</p>
+            <a href="{{ route('admin.cat-style-shop.index') }}" class="flex items-center px-4 py-2 text-zinc-100 hover:bg-zinc-800 rounded-md {{ request()->routeIs('admin.cat-style-shop.*') ? 'bg-zinc-800 text-emerald-400' : '' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.585l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                Categorias de Discos
+            </a>
+            <a href="{{ route('admin.midia-status.index') }}" class="flex items-center px-4 py-2 text-zinc-100 hover:bg-zinc-800 rounded-md mt-1 {{ request()->routeIs('admin.midia-status.*') ? 'bg-zinc-800 text-emerald-400' : '' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                Status de Mídia
+            </a>
+            <a href="{{ route('admin.cover-status.index') }}" class="flex items-center px-4 py-2 text-zinc-100 hover:bg-zinc-800 rounded-md mt-1 {{ request()->routeIs('admin.cover-status.*') ? 'bg-zinc-800 text-emerald-400' : '' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Status de Capa
+            </a>
+            <a href="{{ route('admin.suppliers.index') }}" class="flex items-center px-4 py-2 text-zinc-100 hover:bg-zinc-800 rounded-md mt-1 {{ request()->routeIs('admin.suppliers.*') ? 'bg-zinc-800 text-emerald-400' : '' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Fornecedores
+            </a>
+        </div>
+
+        <div class="mb-6">
             <p class="text-xs uppercase text-zinc-500 mb-2 px-4">Gerenciamento</p>
             <a href="#" class="flex items-center px-4 py-2 text-zinc-100 hover:bg-zinc-800 rounded-md">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

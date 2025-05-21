@@ -11,13 +11,14 @@ class CatStyleShopController extends Controller
 {
     public function index()
     {
-        $categories = CatStyleShop::all();
-        return view('admin.settings.cat_style_shop', compact('categories'));
+        $categories = CatStyleShop::with('parent')->get();
+        return view('admin.cat-style-shop.index', compact('categories'));
     }
 
     public function create()
     {
-        return view('admin.settings.create');
+        // Simplificado: não usamos mais hierarquia de categorias
+        return view('admin.cat-style-shop.create');
     }
 
     public function store(Request $request)
@@ -36,7 +37,8 @@ class CatStyleShopController extends Controller
 
     public function edit(CatStyleShop $catStyleShop)
     {
-        return view('admin.settings.edit', compact('catStyleShop'));
+        // Simplificado: não usamos mais hierarquia de categorias
+        return view('admin.cat-style-shop.edit', compact('catStyleShop'));
     }
 
     public function update(Request $request, CatStyleShop $catStyleShop)
@@ -44,7 +46,7 @@ class CatStyleShopController extends Controller
         $request->validate([
             'nome' => 'required|max:255|unique:cat_style_shop,nome,' . $catStyleShop->id,
         ]);
-
+        
         $catStyleShop->update([
             'nome' => $request->nome,
             'slug' => Str::slug($request->nome),

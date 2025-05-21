@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class MediaStatus extends Model
+class MidiaStatus extends Model
 {
     use HasFactory;
     
@@ -14,7 +14,7 @@ class MediaStatus extends Model
      *
      * @var string
      */
-    protected $table = 'media_statuses';
+    protected $table = 'midia_status';
     
     /**
      * Os atributos que são atribuíveis em massa.
@@ -22,17 +22,15 @@ class MediaStatus extends Model
      * @var array
      */
     protected $fillable = [
-        'name',
-        'slug',
-        'description',
-        'color_code'
+        'title',
+        'description'
     ];
-    
+        
     /**
      * Retorna os discos (vinyl_secs) com este status de mídia
      */
     public function vinylSecs()
     {
-        return $this->hasMany(VinylSec::class, 'media_status_id');
+        return $this->hasMany(VinylSec::class, 'midia_status_id');
     }
 }

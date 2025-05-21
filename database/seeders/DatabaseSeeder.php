@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             EquipmentCategorySeeder::class,
             ProductTypeSeeder::class,
             WeightSeeder::class,
+            CatStyleShopSimpleSeeder::class,
         ]);
     }
 }

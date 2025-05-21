@@ -13,13 +13,15 @@ class VinylSec extends Model
 
     protected $fillable = [
         'vinyl_master_id',
-        'cover_status',
-        'midia_status',
         'catalog_number',
         'barcode',
+        'internal_code',
         'weight_id',
         'dimension_id',
-        'quantity',
+        'midia_status_id',
+        'cover_status_id',
+        'supplier_id',
+        'stock',
         'price',
         'format',
         'num_discs',
@@ -30,16 +32,22 @@ class VinylSec extends Model
         'buy_price',
         'promotional_price',
         'is_promotional',
-        'in_stock',
-        'cat_style_shop_id'
+        'promo_starts_at',
+        'promo_ends_at',
+        'in_stock'
     ];
 
     protected $casts = [
-        'cover_status' => 'string',
-        'midia_status' => 'string',
         'is_new' => 'boolean',
         'is_promotional' => 'boolean',
         'in_stock' => 'boolean',
+        'promo_starts_at' => 'datetime',
+        'promo_ends_at' => 'datetime',
+        'stock' => 'integer',
+        'num_discs' => 'integer',
+        'price' => 'decimal:2',
+        'buy_price' => 'decimal:2',
+        'promotional_price' => 'decimal:2'
     ];
 
     public function vinylMaster(): BelongsTo
@@ -56,6 +64,21 @@ class VinylSec extends Model
     {
         return $this->belongsTo(Dimension::class);
     }
+    
+    public function midiaStatus()
+    {
+        return $this->belongsTo(MidiaStatus::class);
+    }
+    
+    public function coverStatus()
+    {
+        return $this->belongsTo(CoverStatus::class);
+    }
+    
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
 
     public function product()
     {
@@ -64,7 +87,8 @@ class VinylSec extends Model
 
     public function categories()
     {
-        return $this->belongsToMany(CatStyleShop::class, 'cat_style_shop_vinyl_sec');
+        return $this->belongsToMany(CatStyleShop::class, 'cat_style_shop_vinyl_master', 'vinyl_master_id', 'cat_style_shop_id')
+                    ->withTimestamps();
     }
 
     public function playlistTracks()
