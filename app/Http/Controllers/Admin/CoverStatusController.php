@@ -100,7 +100,7 @@ class CoverStatusController extends Controller
     public function update(Request $request, CoverStatus $coverStatus)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:50|unique:cover_statuses,title,' . $coverStatus->id,
+            'title' => 'required|string|max:50|unique:cover_status,title,' . $coverStatus->id,
             'description' => 'nullable|string|max:255',
             
         ]);

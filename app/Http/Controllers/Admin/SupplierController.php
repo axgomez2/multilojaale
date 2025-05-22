@@ -76,7 +76,7 @@ class SupplierController extends Controller
         
         try {
             Supplier::create($request->all());
-            return redirect()->route('suppliers.index')
+            return redirect()->route('admin.suppliers.index')
                 ->with('success', 'Fornecedor cadastrado com sucesso');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -145,7 +145,7 @@ class SupplierController extends Controller
         
         try {
             $supplier->update($request->all());
-            return redirect()->route('suppliers.index')
+            return redirect()->route('admin.suppliers.index')
                 ->with('success', 'Fornecedor atualizado com sucesso');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -164,13 +164,13 @@ class SupplierController extends Controller
     {
         try {
             $supplier->delete();
-            return redirect()->route('suppliers.index')
+            return redirect()->route('admin.suppliers.index')
                 ->with('success', 'Fornecedor removido com sucesso');
         } catch (\Exception $e) {
-            return redirect()->route('suppliers.index')
+            return redirect()->route('admin.suppliers.index')
                 ->with('error', 'Erro ao remover o fornecedor: ' . $e->getMessage());
         }
         
-        return redirect()->route('suppliers.index');
+        return redirect()->route('admin.suppliers.index');
     }
 }
