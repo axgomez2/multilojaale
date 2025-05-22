@@ -75,7 +75,15 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 66;
+        // Log para debug
+        \Log::info('Verificando permissão de administrador', [
+            'user_id' => $this->id,
+            'role' => $this->role,
+            'role_type' => gettype($this->role)
+        ]);
+        
+        // Verificando por valor numérico (66) ou string ('66')
+        return $this->role == 66 || $this->role === 'admin';
     }
     
     /**

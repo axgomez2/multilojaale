@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\PosSalesController;  
 
 // Todas as rotas neste arquivo já estão com prefixo 'admin' e middleware 'auth' e 'admin'
+// O agrupamento agora é feito no arquivo web.php
 // Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 

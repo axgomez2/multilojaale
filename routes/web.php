@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\CategoryController;
+use App\Http\Controllers\YouTubeController;
 
 // Rota pública principal (home)
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -13,8 +14,15 @@ Route::get('/produtos', [CategoryController::class, 'allProducts'])->name('site.
 // Rota para produtos por categoria
 Route::get('/categoria/{slug}', [CategoryController::class, 'show'])->name('site.category');
 
-// Rota para detalhes do disco de vinil
-Route::get('/{artistSlug}/{titleSlug}', [\App\Http\Controllers\Site\VinylDetailsController::class, 'show'])->name('site.vinyl.show');
+// Área administrativa separada - COLOCADA PRIMEIRO PARA TER PRIORIDADE
+// Rotas apenas para administradores
+Route::middleware([
+    'web',  // Adicionando web explicitamente para garantir sessão e CSRF
+    'auth',
+    'admin',
+])->prefix('admin')->group(function () {
+    require __DIR__.'/admin.php';
+});
 
 // Rotas para usuários autenticados
 Route::middleware([
@@ -53,18 +61,12 @@ Route::middleware([
     });
 });
 
-// Área administrativa separada
-// Rotas apenas para administradores
-Route::middleware([
-    'auth',
-    'admin',
-])->prefix('admin')->group(function () {
-    require __DIR__.'/admin.php';
-});
-
 // YouTube API - rota pública para evitar problemas com middlewares
-use App\Http\Controllers\YouTubeController;
 Route::post('/youtube/search', [YouTubeController::class, 'search'])->name('youtube.search');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+
+// IMPORTANTE: Rota para detalhes do disco de vinil - deve ser a ÚTIMA rota
+// por ser uma rota coringa que captura qualquer padrão /{param1}/{param2}
+Route::get('/{artistSlug}/{titleSlug}', [\App\Http\Controllers\Site\VinylDetailsController::class, 'show'])->name('site.vinyl.show');
