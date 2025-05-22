@@ -1,11 +1,11 @@
-<div class="min-h-screen w-64 bg-zinc-900 text-white p-4 fixed left-0 top-0 z-10 overflow-y-auto">
+<div class="h-screen w-64 bg-zinc-900 text-white p-4 fixed left-0 top-0 z-10 overflow-y-auto">
     <div class="flex items-center justify-center mb-8 pt-4">
         <a href="{{ route('admin.dashboard') }}" class="text-xl font-bold">Admin Panel</a>
     </div>
     
     <nav class="space-y-2">
         <!-- Menu Principal -->
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Menu Principal</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,7 +23,7 @@
         </div>
 
         <!-- Produtos -->
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Produtos</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,7 +41,7 @@
         </div>
 
         <!-- Cadastros -->
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Cadastros</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@
         </div>
 
         <!-- Ponto de Venda -->
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Ponto de Venda</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@
         </div>
 
         <!-- Relatórios -->
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Relatórios</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@
         </div>
 
         <!-- Gerenciamento -->
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Gerenciamento</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,7 +156,7 @@
         </div>
 
         <!-- Relatórios (outros) -->
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Relatórios</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,7 +174,7 @@
         </div>
 
         @if(auth()->user()->isDeveloper())
-        <div x-data="{ open: true }" class="mb-6">
+        <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
                 <span>Área do Desenvolvedor</span>
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
