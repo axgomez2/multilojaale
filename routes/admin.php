@@ -112,7 +112,7 @@ Route::prefix('fornecedores')->group(function () {
 });
 
 // Tracks (Faixas de áudio)
-Route::resource('tracks', TrackController::class);
+Route::resource('tracks', TrackController::class, ['as' => 'admin']);
 Route::post('vinyls/{vinyl}/tracks', [TrackController::class, 'storeForVinyl'])->name('admin.vinyls.tracks.store');
 Route::put('vinyls/{vinyl}/tracks/reorder', [TrackController::class, 'reorderTracks'])->name('admin.vinyls.tracks.reorder');
 
@@ -122,12 +122,13 @@ Route::resource('styles', CatStyleShopController::class, ['as' => 'admin'])->par
 Route::resource('shops', CatStyleShopController::class, ['as' => 'admin'])->parameters(['shops' => 'shop']);
 
 // Equipamentos
-Route::resource('equipment', EquipmentController::class);
+Route::resource('equipment', EquipmentController::class, ['as' => 'admin']);
 Route::get('equipment/{equipment}/images', [EquipmentController::class, 'showImages'])->name('admin.equipment.images');
 Route::post('equipment/{equipment}/images', [EquipmentController::class, 'storeImages'])->name('admin.equipment.images.store');
 
-// Suppliers (Fornecedores)
-Route::resource('suppliers', SupplierController::class);
+// Suppliers (Fornecedores) - Usando prefixo 'admin' para evitar conflitos
+// Removendo este resource já que temos uma definição manual para fornecedores acima
+// Route::resource('suppliers', SupplierController::class);
 
 // Media e Cover Status - Ambos já estão definidos acima com rotas individuais
 // Removido Route::resource para evitar conflitos de nomes de rotas
