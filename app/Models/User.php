@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use App\Models\UserPermission;
+use App\Models\Address;
 
 class User extends Authenticatable
 {
@@ -99,5 +100,29 @@ class User extends Authenticatable
     public function isDeveloper(): bool
     {
         return $this->permission && $this->permission->is_developer;
+    }
+    
+    /**
+     * Obtém os endereços do usuário
+     */
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
+    }
+    
+    /**
+     * Obtém o endereço padrão do usuário
+     */
+    public function defaultAddress()
+    {
+        return $this->hasOne(Address::class)->where('is_default', true)->where('is_active', true);
+    }
+    
+    /**
+     * Verifica se o email do usuário foi verificado
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return !is_null($this->email_verified_at);
     }
 }
