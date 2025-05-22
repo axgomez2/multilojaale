@@ -129,8 +129,8 @@ Route::post('equipment/{equipment}/images', [EquipmentController::class, 'storeI
 // Suppliers (Fornecedores)
 Route::resource('suppliers', SupplierController::class);
 
-// Media e Cover Status - Apenas Cover Status como resource, Midia Status já está definido acima
-Route::resource('cover-status', CoverStatusController::class, ['as' => 'admin']);
+// Media e Cover Status - Ambos já estão definidos acima com rotas individuais
+// Removido Route::resource para evitar conflitos de nomes de rotas
 
 // Área do desenvolvedor
 Route::middleware(['developer'])->prefix('developer')->group(function () {
