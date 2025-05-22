@@ -50,7 +50,7 @@ Route::prefix('discos')->group(function () {
 });
 
 // YouTube API - acessível sem middleware admin
-Route::match(['get', 'post'], '/youtube/search', [YouTubeController::class, 'search'])->name('youtube.search')->withoutMiddleware(['admin']);
+Route::match(['get', 'post'], '/youtube/search', [YouTubeController::class, 'search'])->name('admin.youtube.search')->withoutMiddleware(['admin']);
 
 // Gerenciamento de categorias de disco
 Route::prefix('categorias')->group(function () {
