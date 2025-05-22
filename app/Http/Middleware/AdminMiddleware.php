@@ -14,8 +14,22 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
-            return redirect()->route('dashboard');
+        if (!Auth::check()) {
+            // O usuário não está autenticado
+            return redirect()->route('login');
+        }
+        
+        // Vamos logar informações do usuário para debug
+        \Log::info('Tentativa de acesso admin', [
+            'user_id' => Auth::id(),
+            'email' => Auth::user()->email,
+            'role' => Auth::user()->role,
+            'is_admin' => Auth::user()->isAdmin()
+        ]);
+        
+        if (!Auth::user()->isAdmin()) {
+            // O usuário está autenticado mas não é admin
+            return redirect()->route('dashboard')->with('error', 'Você não tem permissão para acessar esta área. Role: ' . Auth::user()->role);
         }
 
         return $next($request);
