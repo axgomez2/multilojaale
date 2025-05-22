@@ -11,11 +11,13 @@ use Illuminate\Support\Facades\Http;
 class ImageService
 {
     /**
-     * Diretório base para imagens de discos
+     * Diretórios para cada tipo de imagem
      * 
      * @var string
      */
     private const VINYL_COVER_DIRECTORY = 'vinyl_covers';
+    private const LABEL_COVER_DIRECTORY = 'label_covers';
+    private const ARTIST_COVER_DIRECTORY = 'artist_covers';
 
     /**
      * Faz upload de uma imagem
@@ -51,13 +53,14 @@ class ImageService
      * @param string $id Identificador para a imagem
      * @param string $extension Extensão do arquivo
      * @param string|null $oldImagePath Caminho da imagem antiga para ser excluída
+     * @param string $type Tipo de imagem ('vinyl', 'label', 'artist')
      * @return string Caminho da imagem salva
      * @throws \Exception
      */
-    public function saveImageFromContents(string $imageContents, string $id, string $extension = 'jpg', ?string $oldImagePath = null): string
+    public function saveImageFromContents(string $imageContents, string $id, string $extension = 'jpg', ?string $oldImagePath = null, string $type = 'vinyl'): string
     {
         try {
-            $imageName = $this->generateImageName($id, $extension);
+            $imageName = $this->generateImageName($id, $extension, $type);
             Storage::disk('public')->put($imageName, $imageContents);
 
             // Remover imagem antiga se existir
@@ -96,11 +99,24 @@ class ImageService
      *
      * @param string $id Identificador para a imagem
      * @param string $extension Extensão do arquivo
+     * @param string $type Tipo de imagem ('vinyl', 'label', 'artist')
      * @return string Nome do arquivo com caminho
      */
-    private function generateImageName(string $id, string $extension): string
+    private function generateImageName(string $id, string $extension, string $type = 'vinyl'): string
     {
-        return self::VINYL_COVER_DIRECTORY . '/' . $id . '_' . Str::random(10) . '.' . $extension;
+        $directory = match($type) {
+            'label' => self::LABEL_COVER_DIRECTORY,
+            'artist' => self::ARTIST_COVER_DIRECTORY,
+            default => self::VINYL_COVER_DIRECTORY
+        };
+        
+        // Verificar se o diretório existe, senão criar
+        $fullPath = 'public/' . $directory;
+        if (!Storage::exists($fullPath)) {
+            Storage::makeDirectory($fullPath);
+        }
+        
+        return $directory . '/' . $id . '_' . Str::random(10) . '.' . $extension;
     }
     
     /**

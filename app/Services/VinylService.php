@@ -195,7 +195,10 @@ class VinylService
                                     if ($imageContent) {
                                         $imagePath = $this->imageService->saveImageFromContents(
                                             $imageContent,
-                                            'artist-' . $artistDiscogsId
+                                            'artist-' . $artistDiscogsId,
+                                            'jpg',
+                                            null,
+                                            'artist'
                                         );
                                         
                                         if ($imagePath) {
@@ -335,7 +338,10 @@ class VinylService
                                 if ($imageContent) {
                                     $imagePath = $this->imageService->saveImageFromContents(
                                         $imageContent,
-                                        'label-' . $labelDiscogsId
+                                        'label-' . $labelDiscogsId,
+                                        'jpg',
+                                        null,
+                                        'label'
                                     );
                                     
                                     if ($imagePath) {
@@ -359,7 +365,10 @@ class VinylService
                     if ($imageContent) {
                         $imagePath = $this->imageService->saveImageFromContents(
                             $imageContent,
-                            'label-thumb-' . ($labelDiscogsId ?: md5($labelName))
+                            'label-thumb-' . ($labelDiscogsId ?: md5($labelName)),
+                            'jpg',
+                            null,
+                            'label'
                         );
                         
                         if ($imagePath) {

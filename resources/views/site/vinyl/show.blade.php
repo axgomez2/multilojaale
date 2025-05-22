@@ -215,16 +215,16 @@
                         @foreach($vinyl->artists as $artist)
                             <div class="flex flex-col md:flex-row gap-4 mb-4">
                                 <!-- Imagem do Artista -->
-                                @if(isset($artist->image_path) && !empty($artist->image_path))
+                                @if($artist->image_url)
                                 <div class="w-full md:w-1/4">
-                                    <img src="{{ asset('storage/' . $artist->image_path) }}" 
+                                    <img src="{{ $artist->image_url }}" 
                                          alt="{{ $artist->name }}" 
                                          class="w-full h-auto rounded-lg object-cover aspect-square">
                                 </div>
                                 @endif
                                 
                                 <!-- Informações do Artista -->
-                                <div class="w-full {{ isset($artist->image_path) && !empty($artist->image_path) ? 'md:w-3/4' : '' }}">
+                                <div class="w-full {{ $artist->image_url ? 'md:w-3/4' : '' }}">
                                     <h4 class="text-xl font-bold text-white mb-2">{{ $artist->name }}</h4>
                                     
                                     @if(isset($artist->bio) && !empty($artist->bio))
@@ -256,16 +256,16 @@
                         
                         <div class="flex flex-col md:flex-row gap-4">
                             <!-- Imagem da Gravadora -->
-                            @if(isset($vinyl->recordLabel->logo_path) && !empty($vinyl->recordLabel->logo_path))
+                            @if($vinyl->recordLabel->logo_url)
                             <div class="w-full md:w-1/4">
-                                <img src="{{ asset('storage/' . $vinyl->recordLabel->logo_path) }}" 
+                                <img src="{{ $vinyl->recordLabel->logo_url }}" 
                                      alt="{{ $vinyl->recordLabel->name }}" 
                                      class="w-full h-auto rounded-lg object-contain bg-white p-2">
                             </div>
                             @endif
                             
                             <!-- Informações da Gravadora -->
-                            <div class="w-full {{ isset($vinyl->recordLabel->logo_path) && !empty($vinyl->recordLabel->logo_path) ? 'md:w-3/4' : '' }}">
+                            <div class="w-full {{ $vinyl->recordLabel->logo_url ? 'md:w-3/4' : '' }}">
                                 <h4 class="text-xl font-bold text-white mb-2">{{ $vinyl->recordLabel->name }}</h4>
                                 
                                 @if(isset($vinyl->recordLabel->description) && !empty($vinyl->recordLabel->description))
