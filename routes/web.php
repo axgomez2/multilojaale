@@ -53,12 +53,22 @@ Route::middleware([
     });
 });
 
+// Rota de debug para verificar o acesso à área admin
+Route::get('/teste-admin', function() {
+    return 'Teste de acesso - você pode ver esta mensagem!';
+});
+
 // Área administrativa separada
 // Rotas apenas para administradores
 Route::middleware([
     'auth',
     'admin',
 ])->prefix('admin')->group(function () {
+    // Rota básica de teste para admin sem chamar o arquivo externo
+    Route::get('/teste', function() {
+        return 'Se você pode ver esta mensagem, você tem acesso admin!';
+    });
+    
     require __DIR__.'/admin.php';
 });
 
