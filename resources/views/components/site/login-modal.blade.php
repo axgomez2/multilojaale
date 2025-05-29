@@ -23,7 +23,7 @@
                             Admin Dashboard
                         </a>
                     @else
-                        <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <a href="{{ route('home') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                             Minha Conta
                         </a>
                     @endif

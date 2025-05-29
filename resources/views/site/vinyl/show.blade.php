@@ -336,7 +336,9 @@
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     @foreach($similarVinyls as $similar)
-                        <x-site.vinyl-card :vinyl="$similar" size="normal" />
+                        <x-site.vinyl-card :vinyl="$similar" size="normal"
+                            :inWishlist="in_array($similar->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
+                            :inWantlist="in_array($similar->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
                     @endforeach
                 </div>
             </div>

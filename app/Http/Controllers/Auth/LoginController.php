@@ -32,9 +32,14 @@ class LoginController extends Controller
 
             $user = Auth::user();
             
-            // Redirect based on user role
-            if ($user->isAdmin()) {
+            // Verificar role do usuário (admin ou comum)
+            if ($user->role == 66 || $user->role === 'admin') {
                 return redirect()->route('admin.dashboard');
+            }
+            
+            // Verificar se o email está verificado para usuários comuns
+            if (!$user->hasVerifiedEmail()) {
+                return redirect()->route('verification.notice');
             }
 
             return redirect()->route('home');

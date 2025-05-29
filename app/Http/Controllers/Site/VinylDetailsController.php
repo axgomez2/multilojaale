@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\VinylMaster;
 use App\Models\Artist;
+use App\Models\Wishlist;
+use App\Models\Wantlist;
+use Illuminate\Support\Facades\Auth;
 
 class VinylDetailsController extends Controller
 {
@@ -89,9 +92,33 @@ class VinylDetailsController extends Controller
             $vinyl->is_available = true;
         });
         
+        // Verificar wishlist e wantlist para o usuário logado
+        $wishlistItems = [];
+        $wantlistItems = [];
+        
+        if (Auth::check()) {
+            // Obter os IDs dos itens na wishlist e wantlist do usuário
+            $userId = Auth::id();
+            $wishlistItems = Wishlist::where('user_id', $userId)
+                ->pluck('vinyl_master_id')
+                ->toArray();
+                
+            $wantlistItems = Wantlist::where('user_id', $userId)
+                ->pluck('vinyl_master_id')
+                ->toArray();
+        }
+        
+        // Verificar se o vinil principal está na wishlist ou wantlist
+        $inWishlist = in_array($vinyl->id, $wishlistItems);
+        $inWantlist = in_array($vinyl->id, $wantlistItems);
+        
         return view('site.vinyl.show', [
             'vinyl' => $vinyl,
             'similarVinyls' => $similarVinyls,
+            'wishlistItems' => $wishlistItems,
+            'wantlistItems' => $wantlistItems,
+            'inWishlist' => $inWishlist,
+            'inWantlist' => $inWantlist
         ]);
     }
 }

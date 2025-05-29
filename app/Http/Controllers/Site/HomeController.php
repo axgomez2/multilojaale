@@ -6,8 +6,11 @@ use App\Models\StoreInformation;
 use App\Models\VinylMaster;
 use App\Models\VinylSec;
 use App\Models\CatStyleShop;
+use App\Models\Wishlist;
+use App\Models\Wantlist;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
@@ -50,11 +53,29 @@ class HomeController extends Controller
             $vinyl->is_available = true;
         });
         
+        // Verificar wishlist e wantlist para o usuário logado
+        $wishlistItems = collect([]);
+        $wantlistItems = collect([]);
+        
+        if (Auth::check()) {
+            // Obter os IDs dos itens na wishlist e wantlist do usuário
+            $userId = Auth::id();
+            $wishlistItems = Wishlist::where('user_id', $userId)
+                ->pluck('vinyl_master_id')
+                ->toArray();
+                
+            $wantlistItems = Wantlist::where('user_id', $userId)
+                ->pluck('vinyl_master_id')
+                ->toArray();
+        }
+        
         return view('site.home', [
             'store' => $store,
             'latestVinyls' => $latestVinyls,
             'featuredVinyls' => $featuredVinyls,
-            'categories' => $categories
+            'categories' => $categories,
+            'wishlistItems' => $wishlistItems,
+            'wantlistItems' => $wantlistItems
         ]);
     }
     

@@ -5,10 +5,41 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Address extends Model
 {
     use HasFactory;
+    
+    /**
+     * Indica que o ID não é auto-incremento
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+    
+    /**
+     * O tipo de chave primária
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+    
+    /**
+     * O método boot para o modelo.
+     *
+     * @return void
+     */
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid()->toString();
+            }
+        });
+    }
     
     /**
      * Os atributos que são atribuíveis em massa.
@@ -18,7 +49,6 @@ class Address extends Model
     protected $fillable = [
         'user_id',
         'name',
-        'recipient',
         'type',
         'zipcode',
         'state',
@@ -28,9 +58,15 @@ class Address extends Model
         'number',
         'complement',
         'reference',
-        'phone',
-        'is_default',
+        'recipient_name',
+        'recipient_phone',
+        'recipient_document',
+        'recipient_email',
+        'is_default_shipping',
+        'is_default_billing',
         'is_active',
+        'country',
+        'additional_data'
     ];
     
     /**

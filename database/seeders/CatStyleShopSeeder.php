@@ -13,32 +13,47 @@ class CatStyleShopSeeder extends Seeder
      */
     public function run(): void
     {
-        // Criar seções principais
-        $secoes = [
-            'DJs' => [
-                'descrição' => 'Discos selecionados por DJs profissionais'
-            ],
-            'Colecionadores' => [
-                'descrição' => 'Itens raros para colecionadores'
-            ],
-            'Lotes' => [
-                'descrição' => 'Conjuntos de discos vendidos em lote'
-            ],
-            'Promoções' => [
-                'descrição' => 'Discos com preços promocionais'
-            ],
+        // Lista completa de categorias de estilo para a loja
+        $categorias = [
+            'DESTAQUE',
+            'VINYL 4 DJ\'S',
+            'COLECIONÁVEIS',
+            'POP',
+            'ROCK',
+            'METAL',
+            'PUNK',
+            'HIP HOP',
+            'R&B',
+            'REGGAE',
+            'FOLK',
+            'MPB',
+            'SERTANEJO',
+            'MUSICA BRASILEIRA',
+            'SAMBA',
+            'PAGODE',
+            'MUSICA LATINA',
+            'WORLD MUSIC',
+            'CLASSICA E ERUDITA',
+            'HOUSE',
+            'TECHNO',
+            'DRUM & BASS',
+            'EURO DANCE',
+            'FLASH HOUSE',
         ];
 
-        foreach ($secoes as $nome => $dados) {
+        // Não podemos truncar a tabela porque há referências em outras tabelas
+        // Em vez disso, vamos atualizar os registros existentes e criar novos quando necessário
+
+        // Inserir as categorias
+        foreach ($categorias as $categoria) {
             CatStyleShop::firstOrCreate(
-                ['nome' => $nome],
+                ['nome' => $categoria],
                 [
-                    'slug' => Str::slug($nome),
-                    'parent_id' => null,
+                    'slug' => Str::slug($categoria)
                 ]
             );
         }
 
-        // Você pode adicionar subcategorias aqui se necessário
+        // A tabela cat_style_shop possui apenas as colunas: id, nome, slug e timestamps
     }
 }

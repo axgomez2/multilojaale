@@ -32,10 +32,11 @@ class VinylService
      * Cria ou atualiza um registro principal de vinyl
      *
      * @param array $releaseData Dados do lançamento do Discogs
+     * @param int $selectedCoverIndex Índice da imagem de capa selecionada
      * @return VinylMaster Registro do vinyl
      * @throws \Exception
      */
-    public function createOrUpdateVinylMaster(array $releaseData): VinylMaster
+    public function createOrUpdateVinylMaster(array $releaseData, $selectedCoverIndex = 0): VinylMaster
     {
         try {
             // Validar dados essenciais
@@ -51,27 +52,39 @@ class VinylService
             $description = $releaseData['notes'] ?? null;
             $discogsUrl = $releaseData['uri'] ?? null;
             
-            // Processar imagem de capa
+            // Processar imagem de capa usando o índice selecionado pelo usuário
             $coverImage = null;
             if (!empty($releaseData['images']) && is_array($releaseData['images'])) {
-                foreach ($releaseData['images'] as $image) {
-                    // Pegar primeira imagem ou imagem primária
-                    if (empty($coverImage) && isset($image['uri'])) {
-                        // Obter o conteúdo da imagem via DiscogsService
-                        $imageContent = $this->discogsService->fetchImage($image['uri']);
-                        
-                        // Se tiver conteúdo, salvar a imagem
-                        if ($imageContent) {
-                            $coverImage = $this->imageService->saveImageFromContents(
-                                $imageContent,
-                                $discogsId
-                            );
-                            
-                            // Se conseguimos salvar uma imagem, parar o loop
-                            if ($coverImage) {
-                                break;
-                            }
-                        }
+                // Validar o índice selecionado
+                $totalImages = count($releaseData['images']);
+                if ($selectedCoverIndex < 0 || $selectedCoverIndex >= $totalImages) {
+                    $selectedCoverIndex = 0; // Usar a primeira imagem como fallback
+                }
+                
+                // Obter a imagem no índice selecionado
+                $selectedImage = $releaseData['images'][$selectedCoverIndex];
+                
+                if (isset($selectedImage['uri'])) {
+                    // Obter o conteúdo da imagem via DiscogsService
+                    $imageContent = $this->discogsService->fetchImage($selectedImage['uri']);
+                    
+                    // Se tiver conteúdo, salvar a imagem
+                    if ($imageContent) {
+                        $coverImage = $this->imageService->saveImageFromContents(
+                            $imageContent,
+                            $discogsId
+                        );
+                    }
+                }
+                
+                // Fallback: Se não conseguimos obter a imagem selecionada, tentar a primeira imagem
+                if (empty($coverImage) && $selectedCoverIndex !== 0 && isset($releaseData['images'][0]['uri'])) {
+                    $imageContent = $this->discogsService->fetchImage($releaseData['images'][0]['uri']);
+                    if ($imageContent) {
+                        $coverImage = $this->imageService->saveImageFromContents(
+                            $imageContent,
+                            $discogsId
+                        );
                     }
                 }
             }

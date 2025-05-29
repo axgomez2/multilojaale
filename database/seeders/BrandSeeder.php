@@ -39,14 +39,21 @@ class BrandSeeder extends Seeder
         ];
 
         foreach ($brands as $brand) {
-            DB::table('brands')->insert([
-                'name' => $brand['name'],
-                'slug' => Str::slug($brand['name']),
-                'description' => $brand['description'],
-                'logo_url' => $brand['logo_url'],
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+            $slug = Str::slug($brand['name']);            
+            // Verifica se a marca já existe
+            if (!DB::table('brands')->where('slug', $slug)->exists()) {
+                DB::table('brands')->insert([
+                    'name' => $brand['name'],
+                    'slug' => $slug,
+                    'description' => $brand['description'],
+                    'logo_url' => $brand['logo_url'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+                $this->command->info('Marca criada: ' . $brand['name']);
+            } else {
+                $this->command->info('Marca já existe: ' . $brand['name']);
+            }
         }
     }
 }

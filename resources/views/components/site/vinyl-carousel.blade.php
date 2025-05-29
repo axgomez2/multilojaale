@@ -2,7 +2,9 @@
     'title',            // Título do carrossel
     'vinyls',           // Coleção de vinis a serem exibidos
     'slug' => null,     // Slug da categoria (opcional)
-    'limit' => 10       // Limite de discos
+    'limit' => 10,      // Limite de discos
+    'wishlistItems' => [],  // IDs dos itens na wishlist
+    'wantlistItems' => []   // IDs dos itens na wantlist
 ])
 
 <div x-data="{ 
@@ -39,7 +41,9 @@
                  :style="`transform: translateX(-${scroll * 240}px)`">
                 @foreach($vinyls->take($limit) as $vinyl)
                     <div class="flex-shrink-0 w-56">
-                        <x-site.vinyl-card :vinyl="$vinyl" size="small" />
+                        <x-site.vinyl-card :vinyl="$vinyl" size="small"
+                            :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
+                            :inWantlist="in_array($vinyl->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
                     </div>
                 @endforeach
             </div>

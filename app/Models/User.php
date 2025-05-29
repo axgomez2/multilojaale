@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -10,11 +10,38 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use App\Models\UserPermission;
 use App\Models\Address;
+use App\Models\Wishlist;
+use App\Models\Wantlist;
+use App\Models\CartItem;
+use App\Models\Order;
+use App\Notifications\CustomVerifyEmail;
+use App\Notifications\CustomResetPassword;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasUuids, Notifiable;
+    
+    /**
+     * Envia a notificação de verificação de email personalizada.
+     *
+     * @return void
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new CustomVerifyEmail);
+    }
+    
+    /**
+     * Envia a notificação de recuperação de senha personalizada.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomResetPassword($token));
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -75,13 +102,6 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        // Log para debug
-        \Log::info('Verificando permissão de administrador', [
-            'user_id' => $this->id,
-            'role' => $this->role,
-            'role_type' => gettype($this->role)
-        ]);
-        
         // Verificando por valor numérico (66) ou string ('66')
         return $this->role == 66 || $this->role === 'admin';
     }
@@ -127,10 +147,76 @@ class User extends Authenticatable
     }
     
     /**
-     * Verifica se o email do usuário foi verificado
+     * Obter a wishlist do usuário
+     */
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class, 'user_id', 'id');
+    }
+    
+    /**
+     * Obtém os itens da lista de interesse (Wantlist) do usuário
+     */
+    public function wantlist()
+    {
+        return $this->hasMany(Wantlist::class, 'user_id', 'id');
+    }
+    
+    /**
+     * Verifica se um vinil específico está na lista de desejos do usuário
+     */
+    public function hasInWishlist($vinylMasterId)
+    {
+        return Wishlist::hasItem($this->id, $vinylMasterId);
+    }
+    
+    /**
+     * Verifica se um vinil específico está na lista de interesse do usuário
+     */
+    public function hasInWantlist($vinylMasterId)
+    {
+        return Wantlist::hasItem($this->id, $vinylMasterId);
+    }
+    
+    /**
+     * Obtém os itens do carrinho de compras do usuário
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
+    
+    /**
+     * Verifica se um vinil específico está no carrinho do usuário
+     */
+    public function hasInCart($vinylMasterId)
+    {
+        return $this->cartItems()->where('vinyl_master_id', $vinylMasterId)->exists();
+    }
+    
+    /**
+     * Calcula o total do carrinho do usuário
+     */
+    public function getCartTotalAttribute()
+    {
+        return $this->cartItems()->with('vinylMaster.vinylSec')->get()->sum(function($item) {
+            return $item->vinylMaster->vinylSec->price * $item->quantity;
+        });
+    }
+    
+    /**
+     * Verificar se o email do usuário foi verificado
      */
     public function hasVerifiedEmail(): bool
     {
-        return !is_null($this->email_verified_at);
+        return $this->email_verified_at !== null;
+    }
+    
+    /**
+     * Obtém os pedidos do usuário
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 }

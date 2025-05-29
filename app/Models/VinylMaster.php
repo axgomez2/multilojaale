@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\HasWishlist;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Wishlist;
+use App\Models\Wantlist;
 use App\Models\Cart;
 
 class VinylMaster extends Model
 {
-    use HasFactory, SoftDeletes, HasWishlist;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -26,16 +28,64 @@ class VinylMaster extends Model
         'release_year',
         'country',
         'record_label_id',
-        'is_published'
     ];
 
     protected $casts = [
         'images' => 'array',
         'release_year' => 'integer',
-        'is_published' => 'boolean',
+        
     ];
 
     protected $with = ['artists', 'tracks', 'vinylSec', 'recordLabel'];
+    
+    /**
+     * Relacionamento com a lista de desejos (para produtos disponíveis)
+     */
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class, 'vinyl_master_id', 'id');
+    }
+    
+    /**
+     * Relacionamento com a lista de interesse (para produtos indisponíveis)
+     */
+    public function wantlists()
+    {
+        return $this->hasMany(Wantlist::class, 'vinyl_master_id', 'id');
+    }
+
+    /**
+     * Verifica se o disco está na wishlist do usuário atual
+     */
+    public function inWishlist()
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+
+        return Wishlist::hasItem(Auth::id(), $this->id);
+    }
+    
+    /**
+     * Verifica se o disco está na wantlist do usuário atual
+     */
+    public function inWantlist()
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+        
+        return Wantlist::hasItem(Auth::id(), $this->id);
+    }
+    
+    /**
+     * Verifica se o disco está disponível para compra
+     * Um disco é considerado disponível se tiver estoque maior que zero
+     */
+    public function isAvailable()
+    {
+        return $this->vinylSec && $this->vinylSec->stock > 0;
+    }
 
     protected static function boot()
     {
@@ -58,7 +108,6 @@ class VinylMaster extends Model
     {
         return $this->belongsTo(RecordLabel::class);
     }
-
 
     public function styles()
     {
@@ -110,51 +159,9 @@ class VinylMaster extends Model
         $this->save();
     }
 
-    public function inWishlist(): bool
-    {
-        if (!auth()->check()) {
-            return false;
-        }
-
-        return $this->wishlist()
-            ->where('user_id', auth()->id())
-            ->exists();
-    }
-
-    public function inWantlist(): bool
-    {
-        if (!auth()->check()) {
-            return false;
-        }
-
-        return $this->wantlist()
-            ->where('user_id', auth()->id())
-            ->exists();
-    }
-
-    public function wishlist()
-    {
-        return $this->morphMany(Wishlist::class, 'product');
-    }
-
-    public function wantlist()
-    {
-        return $this->morphMany(Wantlist::class, 'product');
-    }
-
-    public function wantlists()
-    {
-        return $this->morphMany(Wantlist::class, 'product');
-    }
-
     public function cartItems()
     {
         return $this->hasMany(CartItem::class, 'product_id');
-    }
-
-    public function catStyleShops()
-    {
-        return $this->belongsToMany(CatStyleShop::class, 'cat_style_shop_vinyl_master', 'vinyl_master_id', 'cat_style_shop_id');
     }
 
     public function playlistTracks()

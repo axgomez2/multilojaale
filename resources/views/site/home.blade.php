@@ -76,7 +76,7 @@
 </section>
 
 <!-- Seção de produtos em destaque -->
-<section class="py-12 bg-slate-900">
+<section class="py-12 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-white mb-8 text-center">Discos em Destaque</h2>
         
@@ -84,7 +84,9 @@
             <!-- Grade de produtos usando o componente vinyl-card -->
             <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
                 @foreach($featuredVinyls as $vinyl)
-                    <x-site.vinyl-card :vinyl="$vinyl" size="normal" />
+                    <x-site.vinyl-card :vinyl="$vinyl" size="normal"
+                        :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
+                        :inWantlist="in_array($vinyl->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
                 @endforeach
             </div>
             
@@ -111,7 +113,11 @@
     <!-- Carrossel de lançamentos mais recentes -->
     @if($latestVinyls->isNotEmpty())
         <div class="hidden md:block">
-            <x-site.vinyl-carousel title="Lançamentos Recentes" :vinyls="$latestVinyls" />  
+            <x-site.vinyl-carousel 
+                title="Lançamentos Recentes" 
+                :vinyls="$latestVinyls"
+                :wishlistItems="$wishlistItems"
+                :wantlistItems="$wantlistItems" />  
         </div>
     @endif
     
@@ -121,7 +127,9 @@
             <x-site.vinyl-carousel 
                 title="{{ $categoryData['category']->nome }}" 
                 :vinyls="$categoryData['vinyls']"
-                :slug="$categoryData['category']->slug" 
+                :slug="$categoryData['category']->slug"
+                :wishlistItems="$wishlistItems"
+                :wantlistItems="$wantlistItems" 
             />
         </div>
     @endforeach
@@ -155,7 +163,9 @@
                              :style="`transform: translateX(-${scroll * 100}%)`">
                             @foreach($categoryData['vinyls'] as $vinyl)
                                 <div class="w-full flex-shrink-0 px-2">
-                                    <x-site.vinyl-card :vinyl="$vinyl" size="normal" />
+                                    <x-site.vinyl-card :vinyl="$vinyl" size="normal"
+                                        :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
+                                        :inWantlist="in_array($vinyl->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
                                 </div>
                             @endforeach
                         </div>
@@ -175,7 +185,60 @@
     @endforeach
 
     </div>
+
+    entenda a classificação de discos usados e sua importância:
+    <section class="bg-black text-white p-6">
+  <div class="container mx-auto">
+    <h2 class="text-3xl font-bold text-yellow-400 mb-6">Condição de Mídia vs Capa (Padrão Discogs)</h2>
+    <div class="overflow-x-auto rounded-lg shadow-lg">
+      <table class="w-full text-sm text-left text-white bg-gray-900 border border-gray-700">
+        <thead class="text-xs uppercase bg-gray-800 text-yellow-300">
+          <tr>
+            <th scope="col" class="px-4 py-3 border border-gray-700">Grade</th>
+            <th scope="col" class="px-4 py-3 border border-gray-700">Mídia (Disco)</th>
+            <th scope="col" class="px-4 py-3 border border-gray-700">Capa (Sleeve)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-gray-700 hover:bg-gray-800">
+            <th scope="row" class="px-4 py-3 font-bold text-green-400">Mint (M)</th>
+            <td class="px-4 py-3">Impecável, sem sinais de uso, sem ruídos ou marcas.</td>
+            <td class="px-4 py-3">Sem qualquer desgaste, como nova.</td>
+          </tr>
+          <tr class="border-b border-gray-700 hover:bg-gray-800">
+            <th scope="row" class="px-4 py-3 font-bold text-green-300">Near Mint (NM ou M-)</th>
+            <td class="px-4 py-3">Quase novo, pode ter sido tocado 1–2 vezes. Sem ruídos ou desgaste.</td>
+            <td class="px-4 py-3">Leve sinal de uso, mínimo desgaste nas bordas.</td>
+          </tr>
+          <tr class="border-b border-gray-700 hover:bg-gray-800">
+            <th scope="row" class="px-4 py-3 font-bold text-blue-300">Very Good Plus (VG+)</th>
+            <td class="px-4 py-3">Leves marcas superficiais, ruído muito leve. Toca bem.</td>
+            <td class="px-4 py-3">Desgaste leve, possível “ring wear”, etiquetas discretas.</td>
+          </tr>
+          <tr class="border-b border-gray-700 hover:bg-gray-800">
+            <th scope="row" class="px-4 py-3 font-bold text-blue-200">Very Good (VG)</th>
+            <td class="px-4 py-3">Marcas visíveis, ruídos perceptíveis, mas ainda toca sem pular.</td>
+            <td class="px-4 py-3">Desgaste moderado, possíveis dobras ou marcas.</td>
+          </tr>
+          <tr class="border-b border-gray-700 hover:bg-gray-800">
+            <th scope="row" class="px-4 py-3 font-bold text-yellow-200">Good Plus (G+) / Good (G)</th>
+            <td class="px-4 py-3">Chiados constantes, pode pular ou distorcer. Muito usado.</td>
+            <td class="px-4 py-3">Capa bastante gasta, com rasgos pequenos ou escrita.</td>
+          </tr>
+          <tr class="hover:bg-gray-800">
+            <th scope="row" class="px-4 py-3 font-bold text-red-400">Fair (F) / Poor (P)</th>
+            <td class="px-4 py-3">Muito danificado, som ruim, pode não tocar corretamente.</td>
+            <td class="px-4 py-3">Capa rasgada, faltando partes ou mofada.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 </main>
+
+
+
 
     
 </div>

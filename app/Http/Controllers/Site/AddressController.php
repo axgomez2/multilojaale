@@ -200,4 +200,60 @@ class AddressController extends Controller
             'street' => $data->logradouro
         ]);
     }
+    
+    /**
+     * Armazena um novo endereço via modal (AJAX).
+     */
+    public function storeModal(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:50',
+            'zipcode' => 'required|string|size:9',
+            'state' => 'required|string|size:2',
+            'city' => 'required|string|max:100',
+            'neighborhood' => 'required|string|max:100',
+            'street' => 'required|string|max:200',
+            'number' => 'required|string|max:20',
+            'complement' => 'nullable|string|max:100',
+            'is_default' => 'boolean',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao validar os dados do endereço.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        $data = $validator->validated();
+        $data['user_id'] = $user->id;
+        
+        // Mapear campos do modal para a estrutura da tabela
+        $data['district'] = $data['neighborhood'];
+        unset($data['neighborhood']);
+        
+        // Definir valores padrão para campos obrigatórios
+        $data['recipient'] = $user->name;
+        $data['type'] = 'residential';
+        
+        // Se for o primeiro endereço do usuário, define como padrão automaticamente
+        if ($user->addresses()->count() === 0) {
+            $data['is_default'] = true;
+        }
+        
+        $address = Address::create($data);
+        
+        // Se marcado como padrão, garante que seja o único padrão
+        if ($request->has('is_default') && $request->is_default) {
+            $address->setAsDefault();
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Endereço adicionado com sucesso!',
+            'address' => $address
+        ]);
+    }
 }

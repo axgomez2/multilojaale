@@ -1,213 +1,216 @@
-@props([
-    'vinyl',             // Objeto VinylMaster completo
-    'showActions' => true,    // Mostrar botões de ação (adicionar ao carrinho, favoritos)
-    'size' => 'normal',       // Tamanho do card: 'small', 'normal', 'large'
-    'orientation' => 'vertical' // Orientação: 'vertical', 'horizontal'
-])
+@props(['vinyl', 'showActions' => true, 'size' => 'normal', 'orientation' => 'vertical', 'inWishlist' => false, 'inWantlist' => false])
 
-@php
-    // Determinar classes com base no tamanho
-    $containerClasses = match($size) {
-        'small' => 'max-w-xs',
-        'large' => 'max-w-md',
-        default => 'max-w-sm'
-    };
-    
-    // Determinar altura da imagem com base no tamanho
-    $imgHeight = match($size) {
-        'small' => 'h-48',
-        'large' => 'h-80',
-        default => 'h-64'
-    };
-    
-    // Verificar se o vinil está disponível
-    $isAvailable = $vinyl->is_available ?? 
-                  ($vinyl->vinylSec && 
-                   $vinyl->vinylSec->in_stock && 
-                   $vinyl->vinylSec->price > 0);
-                   
-    // Determinar a estrutura do layout baseado na orientação
-    $isHorizontal = $orientation === 'horizontal';
-@endphp
+<!-- vinyl-card.blade.php - Componente reutilizável para exibição de discos de vinil -->
+<div
+    class="max-w-sm mx-auto {{ $size === 'small' ? 'max-w-xs' : ($size === 'large' ? 'max-w-md' : '') }} {{ $orientation === 'horizontal' ? 'flex' : '' }}"
+    x-data="vinylCard"
+    x-init="
+        vinylId = '{{ $vinyl->id }}'; 
+        vinylTitle = '{{ $vinyl->title }}'; 
+        vinylArtist = '{{ $vinyl->artists->pluck("name")->implode(", ") }}'; 
+        vinylCover = '{{ asset("storage/" . $vinyl->cover_image) }}'
+    "
+>
+    <!-- Card Container -->
+    <div class=" overflow-hidden shadow-md bg-white relative {{ $orientation === 'horizontal' ? 'flex' : '' }} hover:shadow-lg transition-shadow duration-300">
+        <!-- Badges superiores com status do produto -->
+        <div class="absolute top-2 left-2 z-10 flex flex-col gap-1">
+            @if($vinyl->isAvailable())
+                <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full shadow-sm">
+                    Disponível
+                </div>
+            @else
+                <div class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full shadow-sm">
+                    Indisponível
+                </div>
+            @endif
+            
+            @if($vinyl->vinylSec->original_price > $vinyl->vinylSec->price)
+                <div class="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full shadow-sm">
+                    Oferta
+                </div>
+            @endif
+        </div>
 
-@php
-    // Obter o artista principal e o título para construir o slug
-    $artistName = isset($vinyl->artists) && $vinyl->artists->count() > 0 ? $vinyl->artists->first()->name : 'artista';
-    $artistSlug = \Illuminate\Support\Str::slug($artistName);
-    $titleSlug = \Illuminate\Support\Str::slug($vinyl->title ?? 'disco');
-@endphp
+        <!-- Image Container com capa do vinil e botão de play -->
+        <div class="relative {{ $orientation === 'horizontal' ? 'w-1/3' : 'aspect-square' }}">
+            <a href="{{ route('site.vinyl.show', ['artistSlug' => $vinyl->artists->first()->slug, 'titleSlug' => $vinyl->slug]) }}" class="block w-full h-full">
+                <img
+                    src="{{ asset('storage/' . $vinyl->cover_image) }}"
+                    alt="{{ $vinyl->title }} by {{ $vinyl->artists->pluck('name')->implode(', ') }}"
+                    class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                    onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
+                />
+            </a>
 
-<a href="{{ route('site.vinyl.show', ['artistSlug' => $artistSlug, 'titleSlug' => $titleSlug]) }}" 
-   class="block">
-    <div @class([
-        'bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col',
-        $containerClasses,
-        'flex-row' => $isHorizontal
-    ])>
-    <!-- Imagem do produto -->
-    <div @class([
-        'relative', 
-        'w-1/3' => $isHorizontal,
-        'w-full' => !$isHorizontal
-    ])>
-        @if(isset($vinyl->cover_image) && !empty($vinyl->cover_image))
-            <img src="{{ asset('storage/' . $vinyl->cover_image) }}" 
-                alt="{{ $vinyl->title ?? 'Disco de Vinil' }}" 
-                @class([
-                    'object-cover', 
-                    $imgHeight,
-                    'w-full' => !$isHorizontal,
-                    'h-full w-full' => $isHorizontal
-                ])>
-        @elseif(isset($vinyl->images) && $vinyl->images !== null && $vinyl->images->count() > 0)
-            <img src="{{ asset('storage/' . $vinyl->images->first()->path) }}" 
-                alt="{{ $vinyl->title ?? 'Disco de Vinil' }}" 
-                @class([
-                    'object-cover', 
-                    $imgHeight,
-                    'w-full' => !$isHorizontal,
-                    'h-full w-full' => $isHorizontal
-                ])>
-        @else
-            <div @class([
-                'bg-gray-200 flex items-center justify-center', 
-                $imgHeight,
-                'w-full' => !$isHorizontal,
-                'h-full w-full' => $isHorizontal
-            ])>
-                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+            <!-- Overlay com botão de play apenas se tiver faixas com áudio -->
+            @if($vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }))
+            <button
+                type="button"
+                class="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 hover:opacity-100 hover:bg-black/40 transition-all duration-300 ease-in-out"
+                x-on:click="playAudio"
+                title="Ouvir amostra"
+            >
+                <div class="w-16 h-16 rounded-full bg-white/80 hover:bg-white flex items-center justify-center transition-all duration-300 transform hover:scale-110 shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-purple-600 hover:text-purple-700 ml-1 transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                </div>
+            </button>
+            @endif
+        </div>
+
+        <!-- Informações do Produto -->
+        <div class="p-4 {{ $orientation === 'horizontal' ? 'w-2/3 flex flex-col justify-between' : '' }}">
+            <!-- Artista e Título -->
+            <div class="{{ $size === 'small' ? 'mb-1' : 'mb-2' }}">
+                <a href="{{ route('site.vinyl.show', ['artistSlug' => $vinyl->artists->first()->slug, 'titleSlug' => $vinyl->slug]) }}" class="block">
+                    <h5 class="{{ $size === 'small' ? 'text-sm' : 'text-base' }} font-bold tracking-tight text-gray-900 hover:text-purple-700 transition-colors duration-300 line-clamp-1">
+                        {{ $vinyl->artists->pluck('name')->implode(', ') }}
+                    </h5>
+                    <p class="{{ $size === 'small' ? 'text-xs' : 'text-sm' }} text-gray-700 line-clamp-1 mt-0.5">
+                        {{ $vinyl->title }}
+                    </p>
+                </a>
+                <!-- Informações adicionais -->
+                <div class="flex items-center gap-1 mt-1">
+                    <p class="text-xs text-gray-500">{{ $vinyl->release_year }}</p>
+                    <span class="text-xs text-gray-400">&bull;</span>
+                    <p class="text-xs text-gray-500 line-clamp-1">{{ $vinyl->recordLabel->name }}</p>
+                </div>
             </div>
-        @endif
-        
-        <!-- Status do vinil (se aplicável) -->
-        @if($isAvailable)
-            <div class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
-                Disponível
+
+            <!-- Preço e Disponibilidade -->
+            <div class="flex justify-between items-end">
+                <div>
+                    @if($vinyl->vinylSec->original_price > $vinyl->vinylSec->price)
+                        <p class="text-xs text-gray-500 line-through mb-0.5">R$ {{ number_format($vinyl->vinylSec->original_price, 2, ',', '.') }}</p>
+                    @endif
+                    <p class="{{ $size === 'small' ? 'text-base' : 'text-xl' }} font-bold {{ $vinyl->vinylSec->original_price > $vinyl->vinylSec->price ? 'text-red-600' : 'text-gray-900' }}">
+                        R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
+                    </p>
+                </div>
+                <!-- Disponibilidade como tag -->
+                <div class="flex items-center">
+                    @if($vinyl->vinylSec->stock > 0)
+                        <span class="inline-flex items-center text-xs text-green-800">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Em estoque
+                        </span>
+                    @else
+                        <span class="inline-flex items-center text-xs text-red-800">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                            Esgotado
+                        </span>
+                    @endif
+                </div>
             </div>
-        @elseif(isset($vinyl->vinylSec) && $vinyl->vinylSec && !$vinyl->vinylSec->in_stock)
-            <div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                Esgotado
-            </div>
-        @endif
-    </div>
-    
-    <!-- Conteúdo do card -->
-    <div @class([
-        'p-4 pb-0',
-        'w-2/3' => $isHorizontal,
-        'w-full' => !$isHorizontal
-    ])>
-        <!-- Artista primeiro (conforme solicitado) -->
-        @if(isset($vinyl->artists) && $vinyl->artists !== null && $vinyl->artists->count() > 0)
-            <p class="font-medium text-slate-700 mb-1">
-                {{ $vinyl->artists->pluck('name')->join(', ') }}
-            </p>
-        @endif
-        
-        <!-- Título do disco com fonte menor -->
-        <h3 @class([
-            'font-bold text-gray-900 truncate mb-2',
-            'text-xs' => $size === 'small',
-            'text-sm' => $size === 'normal',
-            'text-base' => $size === 'large'
-        ])>
-            {{ $vinyl->title ?? 'Disco de Vinil' }}
-        </h3>
-        
-        <!-- Preço com tamanho reduzido -->
-        @if(isset($vinyl->vinylSec) && $vinyl->vinylSec && isset($vinyl->vinylSec->price) && $vinyl->vinylSec->price > 0)
-            <p @class([
-                'font-bold text-slate-900 mt-1',
-                'text-sm' => $size === 'small',
-                'text-base' => $size === 'normal',
-                'text-lg' => $size === 'large'
-            ])>
-                R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}
-            </p>
-        @endif
-        
-        <!-- Barra de navegação inferior com botões de ação -->
+        </div>
+
         @if($showActions)
-            <div class="mt-auto -mx-4 flex w-auto overflow-hidden border-t border-gray-200" style="height: 40px; margin-bottom: -1px; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;">
-                @if($isAvailable)
-                    <!-- Botão de favoritos (20%) -->
-                    <button 
+        <!-- Barra de ações - Wishlist/Wantlist, Play e Carrinho com proporção 20-20-60 -->
+        <div class="flex w-full divide-x divide-gray-100 {{ $orientation === 'horizontal' ? 'absolute bottom-0 left-0 right-0' : '' }}">
+            <!-- Botão de Wishlist/Wantlist (20%) - Implementação híbrida -->
+            <div class="w-[20%]">
+                @if($vinyl->isAvailable())
+                    <!-- Botão de Wishlist para produtos disponíveis -->
+                    <button
                         type="button"
-                        @click="$dispatch('toggle-wishlist', {id: {{ $vinyl->id ?? 0 }}});"
-                        class="flex items-center justify-center w-1/5 h-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                        class="w-full h-full bg-gray-100 py-3 flex items-center justify-center hover:bg-gray-200 transition-colors duration-300 relative"
+                        onclick="toggleWishlist('{{ $vinyl->id }}', this)"
+                        data-vinyl-id="{{ $vinyl->id }}"
+                        data-wishlist-id="{{ $vinyl->id }}"
                         title="Adicionar à lista de desejos"
                     >
-                        <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" 
+                             class="wishlist-icon w-5 h-5 {{ $inWishlist ? 'text-red-600' : 'text-gray-700' }} transition-colors duration-300" 
+                             viewBox="0 0 24 24" 
+                             fill="{{ $inWishlist ? 'currentColor' : 'none' }}" 
+                             stroke="currentColor" 
+                             stroke-width="2" 
+                             stroke-linecap="round" 
+                             stroke-linejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                         </svg>
-                    </button>
-                    
-                    <!-- Botão de play (20%) -->
-                    <button 
-                        type="button"
-                        @click="$dispatch('play-preview', {id: {{ $vinyl->id ?? 0 }}});"
-                        class="flex items-center justify-center w-1/5 h-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                        title="Ouvir prévia"
-                    >
-                        <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </button>
-                    
-                    <!-- Botão de adicionar ao carrinho (60%) -->
-                    <button 
-                        type="button"
-                        @click="$dispatch('add-to-cart', {id: {{ $vinyl->id ?? 0 }}});"
-                        class="flex items-center justify-center w-3/5 h-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-medium transition-colors"
-                    >
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <span class="text-xs">Adicionar</span>
                     </button>
                 @else
-                    <!-- Botão de Wantlist (20%) -->
-                    <button 
+                    <!-- Botão de Wantlist para produtos indisponíveis -->
+                    <button
                         type="button"
-                        @click="$dispatch('add-to-wantlist', {id: {{ $vinyl->id ?? 0 }}});"
-                        class="flex items-center justify-center w-1/5 h-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                        title="Adicionar à lista de procura"
+                        class="w-full h-full bg-gray-100 py-3 flex items-center justify-center hover:bg-gray-200 transition-colors duration-300 relative"
+                        onclick="toggleWantlist('{{ $vinyl->id }}', this)"
+                        data-vinyl-id="{{ $vinyl->id }}"
+                        data-wantlist-id="{{ $vinyl->id }}"
+                        title="Adicionar à lista de interesse"
                     >
-                        <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" 
+                             class="wantlist-icon w-5 h-5 {{ $inWantlist ? 'text-purple-600' : 'text-gray-700' }} transition-colors duration-300" 
+                             viewBox="0 0 24 24" 
+                             fill="{{ $inWantlist ? 'currentColor' : 'none' }}" 
+                             stroke="currentColor" 
+                             stroke-width="2" 
+                             stroke-linecap="round" 
+                             stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
-                    </button>
-                    
-                    <!-- Botão de play (20%) -->
-                    <button 
-                        type="button"
-                        @click="$dispatch('play-preview', {id: {{ $vinyl->id ?? 0 }}});"
-                        class="flex items-center justify-center w-1/5 h-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                        title="Ouvir prévia"
-                    >
-                        <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </button>
-                    
-                    <!-- Botão de avise-me (60%) -->
-                    <button 
-                        type="button"
-                        @click="$dispatch('notify-available', {id: {{ $vinyl->id ?? 0 }}});"
-                        class="flex items-center justify-center w-3/5 h-full bg-slate-700 hover:bg-slate-800 text-white font-medium transition-colors"
-                    >
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span class="text-xs">Avise-me</span>
                     </button>
                 @endif
             </div>
+            
+            <!-- Botão de Play (20%) - Somente se tiver áudio disponível -->
+            <button 
+                type="button"
+                class="w-[20%] {{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-100 opacity-50 cursor-not-allowed' }} p-3 flex items-center justify-center transition-colors duration-300"
+                x-on:click="playAudio"
+                {{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? '' : 'disabled' }}
+                title="{{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'Ouvir amostra' : 'Áudio não disponível' }}"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 {{ $vinyl->tracks->contains(function($track) { return !empty($track->youtube_url); }) ? 'text-blue-600' : 'text-gray-400' }}" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5.14v14l11-7-11-7z" />
+                </svg>
+            </button>
+            
+            <!-- Botão de Carrinho (60%) - Adaptado para produtos disponíveis/indisponíveis -->
+            @if($vinyl->isAvailable())
+                <button
+                    type="button"
+                    class="w-[60%] bg-purple-600 text-white py-3 flex items-center justify-center hover:bg-purple-700 transition-colors duration-300"
+                    x-on:click="addToCart($event)"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                    </svg>
+                    <span class="font-medium {{ $size === 'small' ? 'text-sm' : '' }}">{{ $size === 'small' ? 'Comprar' : 'Adicionar ao Carrinho' }}</span>
+                </button>
+            @else
+                <button
+                    type="button"
+                    class="w-[60%] bg-gray-600 text-white py-3 flex items-center justify-center transition-colors duration-300 cursor-not-allowed"
+                    disabled
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 16.7a4 4 0 0 1-4 4H4v-4h16.7a4 4 0 0 1-.7 0z"/>
+                        <path d="M16 8a2 2 0 0 1 2 2v2h-2V8z"/>
+                        <path d="M12 8a2 2 0 0 1 2 2v2h-2V8z"/>
+                        <path d="M8 8a2 2 0 0 1 2 2v2H8V8z"/>
+                        <path d="M4 8a2 2 0 0 1 2 2v2H4V8z"/>
+                        <path d="M20 12V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4"/>
+                    </svg>
+                    <span class="font-medium {{ $size === 'small' ? 'text-sm' : '' }}">Indisponível</span>
+                </button>
+            @endif
+        </div>
         @endif
     </div>
 </div>
-</a>
+
+
+
+

@@ -49,14 +49,31 @@ class EquipmentCategorySeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            DB::table('equipment_categories')->insert([
-                'name' => $category['name'],
-                'slug' => Str::slug($category['name']),
-                'description' => $category['description'],
-                'parent_id' => $category['parent_id'],
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+            $slug = Str::slug($category['name']);
+            
+            // Verifica se a categoria já existe
+            if (!DB::table('equipment_categories')->where('slug', $slug)->exists()) {
+                // Se for uma subcategoria, verifica se o parent_id é válido
+                if (isset($category['parent_id'])) {
+                    $parent = DB::table('equipment_categories')->find($category['parent_id']);
+                    if (!$parent) {
+                        $this->command->error('Categoria pai não encontrada para: ' . $category['name']);
+                        continue;
+                    }
+                }
+                
+                DB::table('equipment_categories')->insert([
+                    'name' => $category['name'],
+                    'slug' => $slug,
+                    'description' => $category['description'],
+                    'parent_id' => $category['parent_id'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+                $this->command->info('Categoria criada: ' . $category['name']);
+            } else {
+                $this->command->info('Categoria já existe: ' . $category['name']);
+            }
         }
     }
 }

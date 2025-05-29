@@ -27,7 +27,8 @@ class DatabaseSeeder extends Seeder
             EquipmentCategorySeeder::class,
             ProductTypeSeeder::class,
             WeightSeeder::class,
-            CatStyleShopSimpleSeeder::class,
+            CatStyleShopSeeder::class,
+            FinalPaymentGatewaySeeder::class, // Usando o novo seeder de gateways
         ]);
     }
 }

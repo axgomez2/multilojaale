@@ -15,7 +15,7 @@ return new class extends Migration
         if (!Schema::hasTable('pos_sales')) {
             Schema::create('pos_sales', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->nullable(); // Usuário cadastrado (opcional)
+            $table->uuid('user_id')->nullable(); // Usuário cadastrado (opcional)
             $table->string('customer_name')->nullable(); // Nome do cliente não cadastrado
             $table->decimal('subtotal', 10, 2);
             $table->decimal('discount', 10, 2)->default(0);

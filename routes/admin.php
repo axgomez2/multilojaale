@@ -13,12 +13,17 @@ use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\MidiaStatusController;
 use App\Http\Controllers\Admin\CoverStatusController;
 use App\Http\Controllers\Admin\ReportsController;
-use App\Http\Controllers\Admin\PosSalesController;  
+use App\Http\Controllers\Admin\PosSalesController;
+use App\Http\Controllers\Admin\DebugController;
+use App\Http\Controllers\Admin\PaymentSettingsController;
 
 // Todas as rotas neste arquivo já estão com prefixo 'admin' e middleware 'auth' e 'admin'
 // O agrupamento agora é feito no arquivo web.php
 // Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+// Página de depuração
+Route::get('/debug/discogs', [DebugController::class, 'discogs'])->name('admin.debug.discogs');
 
 // Gerenciamento de Discos
 Route::prefix('discos')->group(function () {
@@ -89,6 +94,13 @@ Route::prefix('relatorios')->group(function () {
     Route::get('/discos', [ReportsController::class, 'vinyl'])->name('admin.reports.vinyl');
 });
 
+// Configurações de Pagamento
+Route::prefix('payment')->group(function () {
+    Route::get('/', [PaymentSettingsController::class, 'index'])->name('admin.payment.index');
+    Route::get('/{id}/edit', [PaymentSettingsController::class, 'edit'])->name('admin.payment.edit');
+    Route::put('/{id}', [PaymentSettingsController::class, 'update'])->name('admin.payment.update');
+});
+
 // PDV - Point of Sale (Vendas Diretas)
 Route::prefix('pdv')->group(function () {
     Route::get('/', [PosSalesController::class, 'index'])->name('admin.pos.index');
@@ -110,6 +122,24 @@ Route::prefix('fornecedores')->group(function () {
     Route::get('/{supplier}/edit', [SupplierController::class, 'edit'])->name('admin.suppliers.edit');
     Route::put('/{supplier}', [SupplierController::class, 'update'])->name('admin.suppliers.update');
     Route::delete('/{supplier}', [SupplierController::class, 'destroy'])->name('admin.suppliers.destroy');
+});
+
+// Gerenciamento de Artistas
+Route::prefix('artists')->name('artists.')->group(function () {
+    Route::get('/', [ArtistsController::class, 'index'])->name('index');
+    Route::get('/create', [ArtistsController::class, 'create'])->name('create');
+    Route::post('/', [ArtistsController::class, 'store'])->name('store');
+    Route::get('/{artist}/edit', [ArtistsController::class, 'edit'])->name('edit');
+    Route::put('/{artist}', [ArtistsController::class, 'update'])->name('update');
+    Route::delete('/{artist}', [ArtistsController::class, 'destroy'])->name('destroy');
+});
+
+// Rotas para gerenciar pedidos
+Route::prefix('orders')->name('admin.orders.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\OrdersController::class, 'index'])->name('index');
+    Route::get('/{order}', [\App\Http\Controllers\Admin\OrdersController::class, 'show'])->name('show');
+    Route::put('/{order}/status', [\App\Http\Controllers\Admin\OrdersController::class, 'updateStatus'])->name('update-status');
+    Route::get('/{order}/shipping-label', [\App\Http\Controllers\Admin\OrdersController::class, 'generateShippingLabel'])->name('shipping-label');
 });
 
 // Tracks (Faixas de áudio)

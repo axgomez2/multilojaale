@@ -52,7 +52,16 @@ class RegisterController extends Controller
         ]);
 
         Auth::login($user);
-
-        return redirect()->route('home');
+        
+        // Enviar email de verificação
+        $user->sendEmailVerificationNotification();
+        
+        // Verificação explícita da role para evitar dependências de métodos
+        if ($user->role == 66 || $user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        
+        // Redirecionar para a página de verificação de email
+        return redirect()->route('verification.notice');
     }
 }

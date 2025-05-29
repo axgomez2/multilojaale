@@ -3,13 +3,25 @@
 namespace App\Traits;
 
 use App\Models\Wishlist;
+use App\Models\Wantlist;
 use Illuminate\Support\Facades\Auth;
 
 trait HasWishlist
 {
+    /**
+     * Relacionamento com a lista de desejos (para produtos disponíveis)
+     */
     public function wishlists()
     {
-        return $this->morphMany(Wishlist::class, 'product');
+        return $this->hasMany(Wishlist::class, 'vinyl_master_id');
+    }
+    
+    /**
+     * Relacionamento com a lista de interesse (para produtos indisponíveis)
+     */
+    public function wantlists()
+    {
+        return $this->hasMany(Wantlist::class, 'vinyl_master_id');
     }
 
     /**
@@ -26,7 +38,6 @@ trait HasWishlist
 
         return $this->wishlists()
             ->where('user_id', Auth::id())
-            ->where('is_wantlist', false)
             ->exists();
     }
     
@@ -42,9 +53,8 @@ trait HasWishlist
             return false;
         }
         
-        return $this->wishlists()
+        return $this->wantlists()
             ->where('user_id', Auth::id())
-            ->where('is_wantlist', true)
             ->exists();
     }
 }

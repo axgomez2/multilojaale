@@ -76,6 +76,24 @@
             </div>
         </div>
 
+        <!-- Pedidos Online -->
+        <div x-data="{ open: {{ request()->routeIs('orders.*') ? 'true' : 'false' }} }" class="mb-6">
+            <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
+                <span>Pedidos Online</span>
+                <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            <div x-show="open" x-transition>
+                <a href="{{ route('admin.orders.index') }}" class="flex items-center px-4 py-2 text-zinc-100 hover:bg-zinc-800 rounded-md {{ request()->routeIs('orders.index') ? 'bg-zinc-800 text-emerald-400' : '' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Lista de Pedidos
+                </a>
+            </div>
+        </div>
+        
         <!-- Ponto de Venda -->
         <div x-data="{ open: false }" class="mb-6">
             <button @click="open = !open" class="w-full flex items-center justify-between text-xs uppercase text-zinc-500 mb-2 px-4 focus:outline-none">
@@ -151,6 +169,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     Configurações
+                </a>
+                <a href="{{ route('admin.payment.index') }}" class="flex items-center px-4 py-2 text-zinc-100 hover:bg-zinc-800 rounded-md mt-1 {{ request()->routeIs('admin.payment.*') ? 'bg-zinc-800 text-emerald-400' : '' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Gateways de Pagamento
                 </a>
             </div>
         </div>

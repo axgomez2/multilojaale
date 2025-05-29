@@ -53,10 +53,19 @@ class GoogleSocialiteController extends Controller
                 Auth::login($newUser);
             }
             
-            // Redireciona com base no role do usuário
+            // Verificar email e redirecionar adequadamente
             $user = Auth::user();
+            
+            // Admin sempre vai para o painel admin, independente de verificação
             if ($user->isAdmin()) {
                 return redirect()->route('admin.dashboard');
+            }
+            
+            // Usuário comum: verificar se email está verificado
+            if (!$user->hasVerifiedEmail()) {
+                // Para usuários do Google, marcamos o email como verificado automaticamente
+                // já que o Google já verificou o email
+                $user->markEmailAsVerified();
             }
             
             return redirect()->route('home');

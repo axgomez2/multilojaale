@@ -159,8 +159,11 @@ class VinylController extends Controller
 
             DB::beginTransaction();
 
-            // Criar o registro principal do vinyl - agora com o slug único
-            $vinylMaster = $this->vinylService->createOrUpdateVinylMaster($releaseData);
+            // Capturar o índice da imagem selecionada (padrão: 0 se não for especificado)
+            $selectedCoverIndex = $request->input('selected_cover_index', 0);
+            
+            // Criar o registro principal do vinyl - agora com o slug único e a imagem selecionada
+            $vinylMaster = $this->vinylService->createOrUpdateVinylMaster($releaseData, $selectedCoverIndex);
             
             // Sincronizar relacionamentos
             $this->vinylService->syncArtists($vinylMaster, $releaseData['artists'] ?? []);
