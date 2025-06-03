@@ -1,4 +1,11 @@
-<x-app-layout>
+<x-app-layout
+    :vinyl="$vinyl"
+    :title="$title ?? null"
+    :description="$description ?? null"
+    :keywords="$keywords ?? null"
+    :image="$image ?? null"
+    :breadcrumbs="$breadcrumbs ?? null"
+>
     <main class="flex-1 bg-slate-900 py-8">
         <div class="container mx-auto px-4">
             

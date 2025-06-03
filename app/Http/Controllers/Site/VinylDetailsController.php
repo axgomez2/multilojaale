@@ -112,13 +112,60 @@ class VinylDetailsController extends Controller
         $inWishlist = in_array($vinyl->id, $wishlistItems);
         $inWantlist = in_array($vinyl->id, $wantlistItems);
         
+        // Define SEO specific data for this page
+        $artist = $vinyl->artists->first();
+        $artistName = $artist ? $artist->name : '';
+        
+        $title = $vinyl->title . ' - ' . $artistName;
+        $description = 'Disco ' . $vinyl->title . ' de ' . $artistName;
+        if (!empty($vinyl->description)) {
+            $description .= '. ' . substr($vinyl->description, 0, 150);
+            if (strlen($vinyl->description) > 150) {
+                $description .= '...';
+            }
+        }
+        
+        $keywords = 'vinil, disco, ' . $artistName . ', ' . $vinyl->title . ', música';
+        if ($vinyl->categories && $vinyl->categories->count() > 0) {
+            $keywords .= ', ' . $vinyl->categories->pluck('nome')->implode(', ');
+        }
+        
+        $image = null;
+        if (!empty($vinyl->cover_image)) {
+            $image = asset('storage/' . $vinyl->cover_image);
+        }
+        
+        // Prepare breadcrumbs for schema
+        $breadcrumbs = [
+            ['name' => 'Início', 'url' => route('home')]
+        ];
+        
+        if ($vinyl->categories && $vinyl->categories->count() > 0) {
+            $category = $vinyl->categories->first();
+            $breadcrumbs[] = [
+                'name' => $category->nome,
+                'url' => route('site.category', $category->slug)
+            ];
+        }
+        
+        $breadcrumbs[] = [
+            'name' => $title,
+            'url' => url()->current()
+        ];
+        
+        // Return the view with all data
         return view('site.vinyl.show', [
             'vinyl' => $vinyl,
             'similarVinyls' => $similarVinyls,
             'wishlistItems' => $wishlistItems,
             'wantlistItems' => $wantlistItems,
             'inWishlist' => $inWishlist,
-            'inWantlist' => $inWantlist
+            'inWantlist' => $inWantlist,
+            'title' => $title,
+            'description' => $description,
+            'keywords' => $keywords,
+            'image' => $image,
+            'breadcrumbs' => $breadcrumbs
         ]);
     }
 }

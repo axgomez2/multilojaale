@@ -1,38 +1,259 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
-        
-        @php
-            $store = \App\Models\StoreInformation::getInstance();
-            $pageTitle = $title ?? $store->name ?? config('app.name', 'Laravel');
-        @endphp
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-        <title>{{ $pageTitle }}</title>
+    @php
+        $store = \App\Models\StoreInformation::getInstance();
         
-        <!-- Favicon -->
-        @if($store->favicon_url)
-        <link rel="icon" href="{{ $store->favicon_url }}" type="image/x-icon">
+        // Verificar se estamos em uma página de vinil
+        // Usamos $vinyl passado como parâmetro do componente
+        $isVinyl = isset($vinyl) && $vinyl instanceof \App\Models\VinylMaster;
+        
+        // Título da página - usamos o $title passado pelo componente se existir
+        $pageTitle = $title ?? '';
+        if (empty($pageTitle)) {
+            if ($isVinyl) {
+                $pageTitle = $vinyl->title;
+                if ($vinyl->artists && $vinyl->artists->count() > 0) {
+                    $pageTitle .= ' - ' . $vinyl->artists->first()->name;
+                }
+            } else {
+                $pageTitle = $store->name ?? config('app.name', 'RDV DISCOS');
+            }
+        }
+        
+        // Meta description - usamos $description passado pelo componente se existir
+        $metaDescription = $description ?? '';
+        if (empty($metaDescription)) {
+            if ($isVinyl) {
+                $metaDescription = 'Disco ' . $vinyl->title;
+                if ($vinyl->artists && $vinyl->artists->count() > 0) {
+                    $metaDescription .= ' de ' . $vinyl->artists->first()->name;
+                }
+                if ($vinyl->description) {
+                    $metaDescription .= '. ' . substr(strip_tags($vinyl->description), 0, 150);
+                    if (strlen($vinyl->description) > 150) {
+                        $metaDescription .= '...';
+                    }
+                }
+            } else {
+                $metaDescription = $store->description ?? 'Loja especializada em discos de vinil';
+            }
+        }
+        
+        // Meta keywords - usamos $keywords passado pelo componente se existir
+        $metaKeywords = $keywords ?? '';
+        if (empty($metaKeywords)) {
+            if ($isVinyl) {
+                $metaKeywords = 'vinil, ' . $vinyl->title;
+                if ($vinyl->artists && $vinyl->artists->count() > 0) {
+                    $metaKeywords .= ', ' . $vinyl->artists->first()->name;
+                }
+                if ($vinyl->categories && $vinyl->categories->count() > 0) {
+                    $metaKeywords .= ', ' . $vinyl->categories->pluck('nome')->implode(', ');
+                }
+            } else {
+                $metaKeywords = $store->keywords ?? 'vinil, discos, música, loja';
+            }
+        }
+        
+        // Imagem para compartilhamento
+        $pageImage = $image ?? '';
+        if (empty($pageImage)) {
+            if ($isVinyl && !empty($vinyl->cover_image)) {
+                $pageImage = asset('storage/' . $vinyl->cover_image);
+            } else {
+                $pageImage = $store->logo_url ?? asset('images/default-og.png');
+            }
+        }
+        
+        // Já definimos os keywords acima, então podemos usar $metaKeywords diretamente
+    @endphp
+
+    <title>{{ $pageTitle }}</title>
+
+    <!-- SEO Básico -->
+    <meta name="description" content="{{ $metaDescription }}">
+    <meta name="robots" content="index, follow">
+    <meta name="keywords" content="{{ $metaKeywords }}">
+    <meta name="author" content="{{ $store->name }}">
+    <meta name="revisit-after" content="7 days">
+    <meta name="language" content="{{ str_replace('_', '-', app()->getLocale()) }}">
+
+    <!-- Open Graph (Facebook, LinkedIn etc.) -->
+    <meta property="og:type" content="{{ $isVinyl ? 'product' : 'website' }}">
+    <meta property="og:site_name" content="{{ $store->name }}">
+    <meta property="og:title" content="{{ $pageTitle }}">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ $pageImage }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="{{ app()->getLocale() }}">
+    @if($isVinyl && isset($vinyl->vinylSec) && $vinyl->vinylSec->price)
+    <meta property="og:price:amount" content="{{ $vinyl->vinylSec->price }}">
+    <meta property="og:price:currency" content="BRL">
+    <meta property="product:price:amount" content="{{ $vinyl->vinylSec->price }}">
+    <meta property="product:price:currency" content="BRL">
+    <meta property="product:availability" content="{{ isset($vinyl->vinylSec) && $vinyl->vinylSec->stock > 0 ? 'in stock' : 'out of stock' }}">
+    @endif
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $pageTitle }}">
+    <meta name="twitter:description" content="{{ $metaDescription }}">
+    <meta name="twitter:image" content="{{ $pageImage }}">
+    @php
+        $twitterHandle = $store->twitter_handle ?? '';
+        $twitterHandle = str_replace('@', '', $twitterHandle);
+        if (!empty($twitterHandle)) {
+            $twitterHandle = '@' . $twitterHandle;
+        }
+    @endphp
+    <meta name="twitter:site" content="{{ $twitterHandle }}">
+    <meta name="twitter:creator" content="{{ $twitterHandle }}">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ url()->current() }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="{{ asset('favicon.ico') }}">
+
+    <!-- JSON-LD (Dados estruturados para o Google) -->
+    <script type="application/ld+json">
+    @if(isset($vinyl) && $isVinyl)
+    {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "{{ $vinyl->title }}",
+        "image": "{{ $pageImage }}",
+        "description": "{{ $pageDescription }}",
+        @if($vinyl->artists && $vinyl->artists->count() > 0)
+        "brand": {
+            "@type": "Brand",
+            "name": "{{ $vinyl->artists->first()->name }}"
+        },
         @endif
-        
-        <!-- Meta Tags -->
-        <meta name="description" content="{{ $store->description }}">
+        @if($vinyl->release_date)
+        "releaseDate": "{{ $vinyl->release_date }}",
+        @endif
+        @if(isset($vinyl->vinylSec))
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "BRL",
+            @if($vinyl->vinylSec->price)
+            "price": "{{ $vinyl->vinylSec->price }}",
+            @endif
+            "availability": "{{ isset($vinyl->vinylSec->stock) && $vinyl->vinylSec->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+            "url": "{{ url()->current() }}"
+        },
+        @endif
+        @if($vinyl->categories && $vinyl->categories->count() > 0)
+        "category": "{{ $vinyl->categories->pluck('name')->implode(', ') }}",
+        @endif
+        "sku": "{{ $vinyl->id }}"
+    }
+    @else
+    {
+        "@context": "https://schema.org",
+        "@type": "Store",
+        "name": "{{ $store->name }}",
+        "url": "{{ url('/') }}",
+        "logo": "{{ $store->logo_url }}",
+        "image": "{{ $store->logo_url }}",
+        "description": "{{ $store->description }}",
+        "email": "{{ $store->contact_email ?? '' }}",
+        "telephone": "{{ $store->contact_phone ?? '' }}",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "{{ $store->address ?? '' }}",
+            "addressLocality": "{{ $store->city ?? '' }}",
+            "addressRegion": "{{ $store->state ?? '' }}",
+            "postalCode": "{{ $store->postal_code ?? '' }}",
+            "addressCountry": "BR"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "{{ $store->latitude ?? '' }}",
+            "longitude": "{{ $store->longitude ?? '' }}"
+        },
+        "openingHoursSpecification": [
+            {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                "opens": "{{ $store->weekday_opening_time ?? '09:00' }}",
+                "closes": "{{ $store->weekday_closing_time ?? '18:00' }}"
+            },
+            {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": "Saturday",
+                "opens": "{{ $store->weekend_opening_time ?? '10:00' }}",
+                "closes": "{{ $store->weekend_closing_time ?? '16:00' }}"
+            }
+        ],
+        "priceRange": "$$$",
+        "sameAs": [
+            "{{ $store->facebook_url }}",
+            "{{ $store->instagram_url }}",
+            "{{ $store->twitter_url ?? '' }}",
+            "{{ $store->youtube_url ?? '' }}"
+        ]
+    }
+    @endif
+    </script>
+    
+    <!-- Breadcrumb JSON-LD Schema -->
+    @if(isset($breadcrumbs) && count($breadcrumbs) > 0)
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            @foreach($breadcrumbs as $index => $breadcrumb)
+            {
+                "@type": "ListItem",
+                "position": {{ $index + 1 }},
+                "name": "{{ $breadcrumb['name'] }}",
+                "item": "{{ $breadcrumb['url'] }}"
+            }@if(!$loop->last),@endif
+            @endforeach
+        ]
+    }
+    </script>
+    @endif
+    
+    <!-- Organization Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "{{ $store->name }}",
+        "url": "{{ url('/') }}",
+        "logo": "{{ $store->logo_url }}",
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "{{ $store->contact_phone ?? '' }}",
+            "contactType": "customer service",
+            "email": "{{ $store->contact_email ?? '' }}",
+            "availableLanguage": ["Portuguese", "English"]
+        }
+    }
+    </script>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-        
-        <!-- Livewire Styles -->
-        @livewireStyles
-        
-        <!-- Script desativado para evitar conflitos com Livewire -->
-        {{-- <script src="{{ asset('js/wishlist-fix.js') }}"></script> --}}
-    </head>
+    <!-- Styles & Scripts -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Livewire -->
+    @livewireStyles
+</head>
     <body class="font-sans antialiased {{ auth()->check() ? 'user-authenticated' : '' }}">
         <!-- Flash Messages/Toasts -->
         <x-site.flash-messages />
