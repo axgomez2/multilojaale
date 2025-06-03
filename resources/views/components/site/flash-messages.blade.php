@@ -14,7 +14,7 @@
     <x-site.toast type="info" message="{{ session('info') }}" />
 @endif
 
-@if($errors->any())
+@if(isset($errors) && $errors->any())
     @foreach($errors->all() as $error)
         <x-site.toast type="error" message="{{ $error }}" />
     @endforeach
