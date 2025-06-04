@@ -11,7 +11,7 @@ class CatStyleShopController extends Controller
 {
     public function index()
     {
-        $categories = CatStyleShop::with('parent')->get();
+        $categories = CatStyleShop::orderBy('nome')->get();
         return view('admin.cat-style-shop.index', compact('categories'));
     }
 

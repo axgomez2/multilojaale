@@ -4,7 +4,7 @@
 <div
     class="max-w-sm mx-auto {{ $size === 'small' ? 'max-w-xs' : ($size === 'large' ? 'max-w-md' : '') }} {{ $orientation === 'horizontal' ? 'flex' : '' }}"
     x-data="vinylCard"
-    x-init="
+    x-init=" 
         vinylId = '{{ $vinyl->id }}'; 
         vinylTitle = '{{ $vinyl->title }}'; 
         vinylArtist = '{{ $vinyl->artists->pluck("name")->implode(", ") }}'; 
@@ -12,10 +12,10 @@
     "
 >
     <!-- Card Container -->
-    <div class=" overflow-hidden shadow-md bg-white relative {{ $orientation === 'horizontal' ? 'flex' : '' }} hover:shadow-lg transition-shadow duration-300">
+    <div class="overflow-hidden shadow-lg bg-white relative {{ $orientation === 'horizontal' ? 'flex' : '' }} hover:shadow-lg transition-shadow duration-300">
         <!-- Badges superiores com status do produto -->
         <div class="absolute top-2 left-2 z-10 flex flex-col gap-1">
-            @if($vinyl->isAvailable())
+            @if($vinyl->vinylSec && $vinyl->vinylSec->in_stock && $vinyl->vinylSec->stock > 0)
                 <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full shadow-sm">
                     Disponível
                 </div>
@@ -116,7 +116,7 @@
         <div class="flex w-full divide-x divide-gray-100 {{ $orientation === 'horizontal' ? 'absolute bottom-0 left-0 right-0' : '' }}">
             <!-- Botão de Wishlist/Wantlist (20%) - Implementação híbrida -->
             <div class="w-[20%]">
-                @if($vinyl->isAvailable())
+                @if($vinyl->vinylSec && $vinyl->vinylSec->in_stock && $vinyl->vinylSec->stock > 0)
                     <!-- Botão de Wishlist para produtos disponíveis -->
                     <button
                         type="button"
@@ -176,7 +176,7 @@
             </button>
             
             <!-- Botão de Carrinho (60%) - Adaptado para produtos disponíveis/indisponíveis -->
-            @if($vinyl->isAvailable())
+            @if($vinyl->vinylSec && $vinyl->vinylSec->in_stock && $vinyl->vinylSec->stock > 0)
                 <button
                     type="button"
                     class="w-[60%] bg-purple-600 text-white py-3 flex items-center justify-center hover:bg-purple-700 transition-colors duration-300"
@@ -187,7 +187,7 @@
                         <circle cx="20" cy="21" r="1" />
                         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                     </svg>
-                    <span class="font-medium {{ $size === 'small' ? 'text-sm' : '' }}">{{ $size === 'small' ? 'Comprar' : 'Adicionar ao Carrinho' }}</span>
+                    <span class="font-medium {{ $size === 'small' ? 'text-sm' : '' }}">{{ $size === 'small' ? 'Comprar' : 'Comprar' }}</span>
                 </button>
             @else
                 <button
@@ -200,7 +200,7 @@
                         <path d="M16 8a2 2 0 0 1 2 2v2h-2V8z"/>
                         <path d="M12 8a2 2 0 0 1 2 2v2h-2V8z"/>
                         <path d="M8 8a2 2 0 0 1 2 2v2H8V8z"/>
-                        <path d="M4 8a2 2 0 0 1 2 2v2H4V8z"/>
+                        <path d="M4 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2H4V8z"/>
                         <path d="M20 12V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4"/>
                     </svg>
                     <span class="font-medium {{ $size === 'small' ? 'text-sm' : '' }}">Indisponível</span>

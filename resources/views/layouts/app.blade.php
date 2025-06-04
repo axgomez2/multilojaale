@@ -64,11 +64,23 @@
         // Imagem para compartilhamento
         $pageImage = $image ?? '';
         if (empty($pageImage)) {
-            if ($isVinyl && !empty($vinyl->cover_image)) {
-                $pageImage = asset('storage/' . $vinyl->cover_image);
+            if ($isVinyl) {
+                // Primeiro tentamos usar a imagem de capa do vinil
+                if (!empty($vinyl->cover_image)) {
+                    $pageImage = asset('storage/' . $vinyl->cover_image);
+                }
+                // Se não tiver capa definida, mas tiver mídia, usamos a primeira mídia
+                elseif ($vinyl->media && $vinyl->media->count() > 0) {
+                    $pageImage = asset('storage/' . $vinyl->media->first()->file_path);
+                }
             } else {
                 $pageImage = $store->logo_url ?? asset('images/default-og.png');
             }
+        }
+        
+        // Garantir que a URL da imagem seja absoluta
+        if (!empty($pageImage) && !str_starts_with($pageImage, 'http')) {
+            $pageImage = url($pageImage);
         }
         
         // Já definimos os keywords acima, então podemos usar $metaKeywords diretamente
@@ -94,19 +106,40 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="{{ app()->getLocale() }}">
-    @if($isVinyl && isset($vinyl->vinylSec) && $vinyl->vinylSec->price)
-    <meta property="og:price:amount" content="{{ $vinyl->vinylSec->price }}">
-    <meta property="og:price:currency" content="BRL">
-    <meta property="product:price:amount" content="{{ $vinyl->vinylSec->price }}">
-    <meta property="product:price:currency" content="BRL">
-    <meta property="product:availability" content="{{ isset($vinyl->vinylSec) && $vinyl->vinylSec->stock > 0 ? 'in stock' : 'out of stock' }}">
+    @if($isVinyl && isset($vinyl->vinylSec))
+        @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price > 0)
+        <meta property="og:price:amount" content="{{ $vinyl->vinylSec->promotional_price }}">
+        <meta property="product:price:amount" content="{{ $vinyl->vinylSec->promotional_price }}">
+        <meta property="product:sale_price:amount" content="{{ $vinyl->vinylSec->promotional_price }}">
+        <meta property="product:original_price:amount" content="{{ $vinyl->vinylSec->price }}">
+        @else
+        <meta property="og:price:amount" content="{{ $vinyl->vinylSec->price }}">
+        <meta property="product:price:amount" content="{{ $vinyl->vinylSec->price }}">
+        @endif
+        <meta property="og:price:currency" content="BRL">
+        <meta property="product:price:currency" content="BRL">
+        <meta property="product:availability" content="{{ $vinyl->vinylSec->in_stock ? 'in stock' : 'out of stock' }}">
+        <meta property="product:retailer_item_id" content="{{ $vinyl->id }}">
+        <meta property="product:condition" content="{{ $vinyl->vinylSec->coverStatus->title ?? 'new' }}">
     @endif
-
+    
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $pageTitle }}">
     <meta name="twitter:description" content="{{ $metaDescription }}">
     <meta name="twitter:image" content="{{ $pageImage }}">
+    <meta name="twitter:url" content="{{ url()->current() }}">
+    @if($isVinyl && isset($vinyl->vinylSec) && $vinyl->vinylSec->price)
+        @if($vinyl->vinylSec->is_promotional && $vinyl->vinylSec->promotional_price > 0)
+        <meta name="twitter:label1" content="Preço">
+        <meta name="twitter:data1" content="R$ {{ number_format($vinyl->vinylSec->promotional_price, 2, ',', '.') }} (antes R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }})">
+        @else
+        <meta name="twitter:label1" content="Preço">
+        <meta name="twitter:data1" content="R$ {{ number_format($vinyl->vinylSec->price, 2, ',', '.') }}">
+        @endif
+        <meta name="twitter:label2" content="Condição">
+        <meta name="twitter:data2" content="{{ $vinyl->vinylSec->coverStatus->title ?? 'Novo' }}">
+    @endif
     @php
         $twitterHandle = $store->twitter_handle ?? '';
         $twitterHandle = str_replace('@', '', $twitterHandle);
@@ -116,6 +149,8 @@
     @endphp
     <meta name="twitter:site" content="{{ $twitterHandle }}">
     <meta name="twitter:creator" content="{{ $twitterHandle }}">
+
+
 
     <!-- Canonical URL -->
     <link rel="canonical" href="{{ url()->current() }}">
@@ -130,8 +165,8 @@
         "@context": "https://schema.org",
         "@type": "Product",
         "name": "{{ $vinyl->title }}",
-        "image": "{{ $pageImage }}",
-        "description": "{{ $pageDescription }}",
+        "image": "{{ $image }}",
+        "description": "{{ $description }}",
         @if($vinyl->artists && $vinyl->artists->count() > 0)
         "brand": {
             "@type": "Brand",
@@ -254,7 +289,7 @@
     <!-- Livewire -->
     @livewireStyles
 </head>
-    <body class="font-sans antialiased {{ auth()->check() ? 'user-authenticated' : '' }}">
+    <body class="font-sans bg-gray-100 antialiased {{ auth()->check() ? 'user-authenticated' : '' }}">
         <!-- Flash Messages/Toasts -->
         <x-site.flash-messages />
         
@@ -263,8 +298,10 @@
             <x-site.navbar2 :store="$store" />
            
             <!-- Page Content -->
-            <main>
-                {{ $slot }}
+            <main> 
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
+                    {{ $slot }}
+                </div>
             </main>
         </div>
         <x-site.footer :store="$store" />

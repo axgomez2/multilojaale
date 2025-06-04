@@ -726,28 +726,74 @@ class VinylController extends Controller
         }
     }
 
+    /**
+     * Update a specific field for a vinyl product (toggle switches)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function updateField(Request $request)
-{
-    try {
-        $vinyl = VinylMaster::findOrFail($request->id);
+    {
+        try {
+            $request->validate([
+                'id' => 'required|numeric|exists:vinyl_masters,id',
+                'field' => 'required|string|in:is_promotional,in_stock',
+                'value' => 'required|boolean'
+            ]);
+            
+            $vinyl = VinylMaster::findOrFail($request->id);
 
-        if (!$vinyl->vinylSec) {
-            throw new \Exception('Vinyl não possui dados secundários cadastrados.');
+            if (!$vinyl->vinylSec) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Este disco não possui informações secundárias configuradas.'
+                    ], 400);
+                }
+                return redirect()->back()->with('error', 'Este disco não possui informações secundárias configuradas.');
+            }
+
+            $vinyl->vinylSec->update([
+                $request->field => $request->value
+            ]);
+            
+            // Construir mensagem de sucesso com base no campo atualizado
+            $fieldName = $request->field === 'is_promotional' ? 'promoção' : 'estoque';
+            $fieldStatus = $request->value ? 'ativado' : 'desativado';
+            $successMessage = "Status de {$fieldName} {$fieldStatus} com sucesso";
+
+            // Responder baseado no tipo de requisição
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMessage,
+                    'data' => [
+                        'id' => $vinyl->id,
+                        'field' => $request->field,
+                        'value' => (bool)$request->value
+                    ]
+                ]);
+            }
+            
+            // Para submissões de formulário normais, redirecionar de volta com mensagem de sucesso
+            return redirect()->back()->with('success', $successMessage);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dados inválidos',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Erro ao atualizar: ' . $e->getMessage());
         }
-
-        $vinyl->vinylSec->update([
-            $request->field => $request->value
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Campo atualizado com sucesso'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 422);
     }
-}
 }

@@ -151,7 +151,7 @@ class WantlistController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Item adicionado à lista de interesse. Você será notificado quando estiver disponível.',
+                'message' => 'disco adicionado a lista de espera, voce sera notificado quando o item estiver disponivel',
                 'added' => true,
                 'id' => $id
             ]);

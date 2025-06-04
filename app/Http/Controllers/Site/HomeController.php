@@ -41,18 +41,14 @@ class HomeController extends Controller
             'recordLabel'
         ])
         ->whereHas('vinylSec', function($query) {
-            $query->where('in_stock', true)
-                  ->where('price', '>', 0);
+            $query->where('price', '>', 0);
         })
         ->latest() // Mais recentes primeiro
         ->take(10) // Limite de 10 registros para o carrossel
         ->get();
         
-        // Para cada vinil, adicionamos um atributo indicando que está disponível
-        $latestVinyls->each(function($vinyl) {
-            $vinyl->is_available = true;
-        });
-        
+        // A disponibilidade é agora tratada pelo componente vinyl-card.
+
         // Verificar wishlist e wantlist para o usuário logado
         $wishlistItems = collect([]);
         $wantlistItems = collect([]);
@@ -104,18 +100,13 @@ class HomeController extends Controller
                     'recordLabel'
                 ])
                 ->whereHas('vinylSec', function($query) {
-                    $query->where('in_stock', true)
-                          ->where('price', '>', 0);
+                    $query->where('price', '>', 0);
                 })
                 ->latest()
                 ->take(20) // Limitado a 20 discos
                 ->get();
                 
-            // Marcar todos como disponíveis já que filtramos por isso
-            $vinyls->each(function($vinyl) {
-                $vinyl->is_available = true;
-            });
-            
+            // A disponibilidade é agora tratada pelo componente vinyl-card.
             return $vinyls;
         }
         
@@ -132,10 +123,9 @@ class HomeController extends Controller
     {
         // Buscar categorias que tenham discos disponíveis (excluindo a categoria 'destaque')
         $categories = CatStyleShop::whereHas('vinylMasters', function($query) {
-                // Apenas discos disponíveis
+                // Apenas discos com preço definido
                 $query->whereHas('vinylSec', function($q) {
-                    $q->where('in_stock', true)
-                      ->where('price', '>', 0);
+                    $q->where('price', '>', 0);
                 });
             })
             ->where('nome', '!=', 'destaque')
@@ -164,18 +154,13 @@ class HomeController extends Controller
                     'recordLabel'
                 ])
                 ->whereHas('vinylSec', function($query) {
-                    $query->where('in_stock', true)
-                          ->where('price', '>', 0);
+                    $query->where('price', '>', 0);
                 })
                 ->latest()
                 ->take(10) // Limitado a 10 discos por carrossel
                 ->get();
             
-            // Marcar todos como disponíveis
-            $vinyls->each(function($vinyl) {
-                $vinyl->is_available = true;
-            });
-            
+            // A disponibilidade é agora tratada pelo componente vinyl-card.
             // Retornar a categoria com seus discos
             return [
                 'category' => $category,

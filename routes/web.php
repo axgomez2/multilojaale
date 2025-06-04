@@ -29,6 +29,12 @@ Route::get('/discos', [CategoryController::class, 'allProducts'])->name('site.pr
 // Rota para produtos por categoria
 Route::get('/categoria/{slug}', [CategoryController::class, 'show'])->name('site.category');
 
+// Rota para produtos por artista
+Route::get('/artista/{slug}', [CategoryController::class, 'byArtist'])->name('site.artist');
+
+// Rota para produtos por gravadora
+Route::get('/gravadora/{slug}', [CategoryController::class, 'byLabel'])->name('site.label');
+
 // Rotas do Melhor Envio (Controller unificado)
 Route::prefix('melhorenvio')->group(function () {
     // Página de demonstração

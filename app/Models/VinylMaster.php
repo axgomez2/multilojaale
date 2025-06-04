@@ -84,7 +84,7 @@ class VinylMaster extends Model
      */
     public function isAvailable()
     {
-        return $this->vinylSec && $this->vinylSec->stock > 0;
+        return $this->vinylSec && $this->vinylSec->in_stock && $this->vinylSec->stock > 0;
     }
 
     protected static function boot()
