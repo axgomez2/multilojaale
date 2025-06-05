@@ -391,7 +391,15 @@
                       class="ml-4 p-2 rounded-full {{ !empty($track->youtube_url) ? 'bg-gray-100 hover:bg-gray-200 text-blue-600' : 'bg-gray-100 opacity-50 cursor-not-allowed text-gray-400' }}"
                       {{ !empty($track->youtube_url) ? '' : 'disabled' }}
                       title="{{ !empty($track->youtube_url) ? 'Ouvir amostra' : 'Áudio não disponível' }}"
-                      data-youtube-url="{{ $track->youtube_url }}"
+                      x-data
+                      x-on:click="$dispatch('play-specific-track', { 
+                        youtubeUrl: '{{ $track->youtube_url }}', 
+                        trackName: {{ Js::from($track->name) }},
+                        vinylId: '{{ $vinyl->id }}',
+                        vinylTitle: {{ Js::from($vinyl->title) }},
+                        vinylArtist: {{ Js::from($vinyl->artists->pluck('name')->implode(', ')) }},
+                        vinylCover: '{{ asset("storage/" . $vinyl->cover_image) }}'
+                      })"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 5.14v14l11-7-11-7z" />

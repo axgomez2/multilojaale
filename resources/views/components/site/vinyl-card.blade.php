@@ -4,12 +4,6 @@
 <div
     class="max-w-sm mx-auto {{ $size === 'small' ? 'max-w-xs' : ($size === 'large' ? 'max-w-md' : '') }} {{ $orientation === 'horizontal' ? 'flex' : '' }}"
     x-data="vinylCard"
-    x-init=" 
-        vinylId = '{{ $vinyl->id }}'; 
-        vinylTitle = '{{ $vinyl->title }}'; 
-        vinylArtist = '{{ $vinyl->artists->pluck("name")->implode(", ") }}'; 
-        vinylCover = '{{ asset("storage/" . $vinyl->cover_image) }}'
-    "
 >
     <!-- Card Container -->
     <div class="overflow-hidden shadow-lg bg-white relative {{ $orientation === 'horizontal' ? 'flex' : '' }} hover:shadow-lg transition-shadow duration-300">
@@ -48,7 +42,7 @@
             <button
                 type="button"
                 class="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 hover:opacity-100 hover:bg-black/40 transition-all duration-300 ease-in-out"
-                x-on:click="playAudio"
+                x-on:click="playAudio('{{ $vinyl->id }}', {{ Js::from($vinyl->title) }}, {{ Js::from($vinyl->artists->pluck("name")->implode(", ")) }}, '{{ asset("storage/" . $vinyl->cover_image) }}')"
                 title="Ouvir amostra"
             >
                 <div class="w-16 h-16 rounded-full bg-white/80 hover:bg-white flex items-center justify-center transition-all duration-300 transform hover:scale-110 shadow-lg">

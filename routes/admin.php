@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\PosSalesController;
 use App\Http\Controllers\Admin\DebugController;
 use App\Http\Controllers\Admin\PaymentSettingsController;
+use App\Http\Controllers\Admin\VinylAIController;
 
 // Todas as rotas neste arquivo já estão com prefixo 'admin' e middleware 'auth' e 'admin'
 // O agrupamento agora é feito no arquivo web.php
@@ -160,6 +161,13 @@ Route::post('equipment/{equipment}/images', [EquipmentController::class, 'storeI
 // Suppliers (Fornecedores) - Usando prefixo 'admin' para evitar conflitos
 // Removendo este resource já que temos uma definição manual para fornecedores acima
 // Route::resource('suppliers', SupplierController::class);
+
+// Rotas de API para funcionalidades de IA
+Route::prefix('api')->group(function () {
+    // Geração de descrição e tradução com IA
+    Route::post('/vinyls/generate-description', [VinylAIController::class, 'generateDescription']);
+    Route::post('/vinyls/translate-description', [VinylAIController::class, 'translateDescription']);
+});
 
 // Media e Cover Status - Ambos já estão definidos acima com rotas individuais
 // Removido Route::resource para evitar conflitos de nomes de rotas

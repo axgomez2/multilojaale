@@ -151,14 +151,14 @@
             <!-- Optional Fields Alert -->
             <div class="flex p-4 mb-4 text-green-800 border-t-4 border-green-300 bg-green-50" role="alert">
                 <svg class="flex-shrink-0 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-                <div class="ml-3 text-sm font-medium">
+                <div class="ml-2 text-sm font-medium">
                     <h3 class="font-bold">Campos opcionais</h3>
                     <p>Campos auxiliares no cadastro, mas não são obrigatórios:</p>
                 </div>
             </div>
 
             <!-- Optional Fields -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <!-- Cover Status -->
                 <div>
                     <label for="cover_status_id" class="block mb-2 text-sm font-medium text-gray-900">Estado da capa:</label>
@@ -203,7 +203,49 @@
                         @endforelse
                     </select>
                 </div>
+
+                  <!-- Buy Price -->
+                  <div>
+                    <label for="buy_price" class="block mb-2 text-sm font-medium text-gray-900">Preço de compra:</label>
+                    <input type="number" id="buy_price" name="buy_price" step="0.01" min="0" value="{{ old('buy_price', $vinylMaster->vinylSec->buy_price ?? '') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                </div>
+
+                 <!-- Promotional Price -->
+                 <div>
+                    <label for="promotional_price" class="block mb-2 text-sm font-medium text-gray-900">Preço promocional:</label>
+                    <input type="number" id="promotional_price" name="promotional_price" step="0.01" min="0" value="{{ old('promotional_price', $vinylMaster->vinylSec->promotional_price ?? '') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                </div>
                 
+                
+            </div>
+<hr class="my-6">
+
+ <!-- Notes -->
+ <div class="mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <label for="notes" class="text-sm font-medium text-gray-900">Notas e descrição:</label>
+                    <div class="space-x-2">
+                        <button type="button" id="generate-description" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-xs px-3 py-1.5">
+                            <i class="fas fa-magic mr-1"></i> Gerar descrição IA
+                        </button>
+                        <button type="button" id="translate-description" class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-xs px-3 py-1.5">
+                            <i class="fas fa-language mr-1"></i> Traduzir para português
+                        </button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <textarea id="notes" name="notes" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500">{{ old('notes', $vinylMaster->vinylSec->notes ?? '') }}</textarea>
+                    <div id="ai-loading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center hidden">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-6">
+
+
+            <!-- Additional Optional Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <!-- Catalog Number -->
                 <div>
                     <label for="catalog_number" class="block mb-2 text-sm font-medium text-gray-900">Numero de catálogo:</label>
@@ -221,10 +263,6 @@
                     <label for="internal_code" class="block mb-2 text-sm font-medium text-gray-900">Código interno da loja:</label>
                     <input type="text" id="internal_code" name="internal_code" value="{{ old('internal_code', $vinylMaster->vinylSec->internal_code ?? '') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
                 </div>
-            </div>
-
-            <!-- Additional Optional Fields -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <!-- Format -->
                 <div>
                     <label for="format" class="block mb-2 text-sm font-medium text-gray-900">Formato:</label>
@@ -250,26 +288,9 @@
                 </div>
             </div>
 
-            <!-- Price Fields -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <!-- Buy Price -->
-                <div>
-                    <label for="buy_price" class="block mb-2 text-sm font-medium text-gray-900">Preço de compra:</label>
-                    <input type="number" id="buy_price" name="buy_price" step="0.01" min="0" value="{{ old('buy_price', $vinylMaster->vinylSec->buy_price ?? '') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                </div>
+           
 
-                <!-- Promotional Price -->
-                <div>
-                    <label for="promotional_price" class="block mb-2 text-sm font-medium text-gray-900">Preço promocional:</label>
-                    <input type="number" id="promotional_price" name="promotional_price" step="0.01" min="0" value="{{ old('promotional_price', $vinylMaster->vinylSec->promotional_price ?? '') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                </div>
-            </div>
-
-            <!-- Notes -->
-            <div class="mb-6">
-                <label for="notes" class="block mb-2 text-sm font-medium text-gray-900">Notas e descrição:</label>
-                <textarea id="notes" name="notes" rows="3" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500">{{ old('notes', $vinylMaster->vinylSec->notes ?? '') }}</textarea>
-            </div>
+           
 
             <!-- Tracks Section -->
             <div class="mb-6">

@@ -113,6 +113,9 @@ Route::middleware([
 // YouTube API - rota pública para evitar problemas com middlewares
 Route::post('/youtube/search', [YouTubeController::class, 'search'])->name('youtube.search');
 
+// API para o player de vinil - rota pública
+Route::get('/api/vinyl/{id}/tracks', [\App\Http\Controllers\Api\VinylTracksController::class, 'getTracks'])->name('api.vinyl.tracks');
+
 // Rotas para Wishlist (Lista de Desejos) usando Livewire
 Route::prefix('wishlist')->name('site.wishlist.')->middleware(['auth', 'verified'])->group(function () {
     // Página principal - usando componente Livewire diretamente

@@ -258,7 +258,7 @@
             @endforeach
         ]
     }
-    </script>
+    </script> 
     @endif
     
     <!-- Organization Schema -->
@@ -305,6 +305,9 @@
             </main>
         </div>
         <x-site.footer :store="$store" />
+
+        <!-- Player de Áudio para Vinis -->
+        <x-site.player />
         
         <!-- Livewire Scripts -->
         @livewireScripts
@@ -380,5 +383,7 @@
         
         <!-- Script para wishlist e wantlist -->
         <script src="{{ asset('js/wishlist-wantlist.js') }}"></script>
+        
+        <!-- YouTube API é carregada pelo módulo vinyl-player.js -->
     </body>
 </html>

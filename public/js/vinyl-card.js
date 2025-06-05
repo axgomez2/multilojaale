@@ -78,16 +78,29 @@ document.addEventListener('alpine:init', () => {
         
         // Método para tocar áudio
         playAudio() {
-            // Disparar evento para o player de áudio
-            const event = new CustomEvent('play-vinyl', { 
-                detail: { 
-                    id: this.vinylId,
-                    title: this.vinylTitle,
-                    artist: this.vinylArtist,
-                    cover: this.vinylCover
-                } 
-            });
-            window.dispatchEvent(event);
+            // Verificar se o player está inicializado
+            if (window.vinylPlayer) {
+                // Chamar diretamente o método do player
+                window.vinylPlayer.loadVinylTracks(
+                    this.vinylId, 
+                    this.vinylTitle, 
+                    this.vinylArtist, 
+                    this.vinylCover
+                );
+            } else {
+                // Fallback para o método anterior usando eventos
+                console.warn('Player não inicializado. Usando método de fallback.');
+                // Disparar evento para o player de áudio (compatibilidade)
+                const event = new CustomEvent('play-vinyl', { 
+                    detail: { 
+                        id: this.vinylId,
+                        title: this.vinylTitle,
+                        artist: this.vinylArtist,
+                        cover: this.vinylCover
+                    } 
+                });
+                window.dispatchEvent(event);
+            }
         }
     }));
 });
