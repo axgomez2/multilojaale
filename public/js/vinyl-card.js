@@ -1,31 +1,22 @@
 // Definição do componente Alpine.js para o vinyl-card
 document.addEventListener('alpine:init', () => {
     Alpine.data('vinylCard', () => ({
-        vinylId: null,
-        vinylTitle: null,
-        vinylArtist: null,
-        vinylCover: null,
-        
         // Método para adicionar ao carrinho
-        addToCart(event) {
-            // Prevenir o comportamento padrão do link
-            if (event) event.preventDefault();
+        addToCart(vinylId, productId) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
             
-            // Exibir um pequeno feedback visual
-            const toastElement = document.createElement('div');
-            toastElement.className = 'fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50';
-            toastElement.textContent = 'Adicionando ao carrinho...';
-            document.body.appendChild(toastElement);
-            
-            // Fazer a requisição AJAX para adicionar o item ao carrinho
             fetch('/carrinho/adicionar', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({ vinyl_master_id: this.vinylId, quantity: 1 })
+                body: JSON.stringify({
+                    vinyl_master_id: vinylId,
+                    product_id: productId,
+                    quantity: 1
+                })
             })
             .then(response => response.json())
             .then(data => {

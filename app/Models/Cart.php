@@ -70,9 +70,13 @@ class Cart extends Model
      */
     public function calculateSubtotal()
     {
-        return $this->items()->with('vinylMaster.vinylSec')->get()->sum(function($item) {
-            return $item->subtotal;
-        });
+        // Carregar os itens com seus relacionamentos adequados
+        return $this->items()
+            ->with(['product.productable', 'vinylMaster.vinylSec'])
+            ->get()
+            ->sum(function($item) {
+                return $item->subtotal;
+            });
     }
 
     /**

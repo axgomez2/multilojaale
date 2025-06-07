@@ -4,6 +4,8 @@ import 'flowbite';
 import './vinyl-actions';
 import './vinyl-player';
 import './vinyl-description-ai';
+import './toast';
+import './vinyl-audio';
 
 window.Alpine = Alpine;
 

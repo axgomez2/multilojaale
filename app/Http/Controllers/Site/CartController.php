@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Site;
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\Product;
 use App\Models\VinylMaster;
 use App\Services\MelhorEnvio;
 use Illuminate\Http\Request;
@@ -53,17 +54,20 @@ class CartController extends Controller
             $cart->save();
         }
         
-        // Sincronizar todos os itens do carrinho do usuário para garantir que tenham cart_id correto
+        // Sincronizar itens do carrinho (garantir que todos os itens do usuário estão associados ao carrinho)
         CartItem::where('user_id', $user->id)
             ->where('saved_for_later', false)
             ->update(['cart_id' => $cart->id]);
         
-        // Registrar na sessão qual é o carrinho ativo para consistência
+        // Salvar o ID do carrinho ativo na sessão
         Session::put('active_cart_id', $cart->id);
         
-        // Agora buscar os itens do carrinho já sincronizados
+        // Obter os itens do carrinho com seus relacionamentos
         $cartItems = $user->cartItems()
-                          ->with('vinylMaster.vinylSec', 'vinylMaster.artists')
+                          ->with([
+                              'product.productable', // Nova estrutura de produtos
+                              'vinylMaster.vinylSec', 'vinylMaster.artists' // Manter retrocompatibilidade
+                          ])
                           ->where('saved_for_later', false)
                           ->get();
         
@@ -80,10 +84,10 @@ class CartController extends Controller
         // Verificar se há um CEP e opções de frete na sessão
         $zipCode = Session::get('shipping_zip_code');
         
-        // Se não há CEP na sessão, tentar usar o endereço padrão do usuário
+        // Se não há CEP na sessão, tentar usar o endereço padrão de entrega do usuário
         if (!$zipCode) {
             $defaultAddress = $user->addresses()
-                ->where('is_default', true)
+                ->where('is_default_shipping', true)
                 ->first();
                 
             if ($defaultAddress) {
@@ -122,23 +126,109 @@ class CartController extends Controller
             Session::put('selected_shipping', $selectedShipping);
         }
         
-        // Obter produtos recomendados (até 3 vinis populares que não estão no carrinho)
+        // Obter produtos recomendados (até 3 produtos populares que não estão no carrinho)
         $recommendedVinyls = [];
         if (count($cartItems) > 0) {
-            // Encontrar categorias dos produtos no carrinho
-            $cartItemIds = $cartItems->pluck('vinyl_master_id')->toArray();
+            // Identificar produtos já no carrinho (tanto por vinyl_master_id quanto por product_id)
+            $cartVinylIds = $cartItems->pluck('vinyl_master_id')->filter()->toArray();
+            $cartProductIds = $cartItems->pluck('product_id')->filter()->toArray();
             
-            // Buscar vinis similares baseados nos que estão no carrinho
-            $recommendedVinyls = VinylMaster::with('vinylSec', 'artists')
-                ->whereHas('vinylSec', function($query) {
-                    $query->where('stock', '>', 0);
+            // Buscar produtos recomendados (vinis)
+            $recommendedVinyls = Product::with('productable')
+                ->where('productable_type', 'App\\Models\\VinylMaster')
+                ->whereNotIn('id', $cartProductIds) // Não mostrar produtos já no carrinho
+                ->whereHas('productable', function($query) use ($cartVinylIds) {
+                    $query->whereNotIn('id', $cartVinylIds) // Não mostrar vinis já no carrinho
+                          ->whereHas('vinylSec', function($query) {
+                              $query->where('stock', '>', 0); // Apenas produtos em estoque
+                          });
                 })
-                ->whereNotIn('id', $cartItemIds)
                 ->orderBy('created_at', 'desc')
                 ->limit(3)
                 ->get();
         }
         
+        // Obter itens da wishlist do usuário
+        $wishlistItems = $user->wishlist()->pluck('vinyl_master_id')->toArray();
+        
+        // Obter o valor do desconto (se houver)
+        $discount = $cart ? $cart->discount : 0;
+        
+        // Verificar se há mensagem de cálculo de frete na sessão
+        $shippingCalculation = Session::get('shipping_calculation');
+        
+        // Se a página está sendo carregada após o cálculo de frete, mas não há opções disponíveis
+        // vamos verificar o motivo
+        if (Session::has('shipping_calculation') && empty($shippingOptions)) {
+            // Se for um cálculo bem-sucedido mas sem opções, isso é estranho
+            if (Session::get('shipping_calculation.success')) {
+                // Forçar a recuperação das opções da sessão novamente
+                $shippingOptions = Session::get('shipping_options', []);
+            }
+        }
+        
+        // Se o usuário tiver um endereço padrão, vamos recuperá-lo para preencher o CEP
+        $defaultAddress = $user->addresses()
+            ->where('is_default_shipping', true)
+            ->first();
+            
+        if ($defaultAddress) {
+            $zipCode = preg_replace('/\D/', '', $defaultAddress->zipcode);
+            
+            // Se temos o endereço padrão, calcular o frete automaticamente?
+            // Vamos apenas armazenar o CEP na sessão para pré-preencher o campo
+            Session::put('shipping_zip_code', $zipCode);
+        }
+        
+        $shippingOptions = Session::get('shipping_options');
+        $selectedShipping = Session::get('selected_shipping');
+        
+        // Garantir que $selectedShipping tenha todas as chaves necessárias
+        if ($selectedShipping) {
+            // Aplicar valores padrão para chaves que possam estar faltando
+            $defaults = [
+                'id' => '',
+                'name' => 'Frete selecionado',
+                'price' => 0,
+                'delivery_time' => 5,
+                'delivery_estimate' => 'Prazo a calcular',
+                'company_id' => 0,
+                'company_name' => '',
+            ];
+            
+            // Combinamos os valores padrão com os valores existentes em $selectedShipping
+            foreach ($defaults as $key => $value) {
+                if (!isset($selectedShipping[$key])) {
+                    $selectedShipping[$key] = $value;
+                }
+            }
+            
+            // Atualizar na sessão
+            Session::put('selected_shipping', $selectedShipping);
+        }
+        
+        // Obter produtos recomendados (até 3 produtos populares que não estão no carrinho)
+        $recommendedVinyls = [];
+        if (count($cartItems) > 0) {
+            // Identificar produtos já no carrinho (tanto por vinyl_master_id quanto por product_id)
+            $cartVinylIds = $cartItems->pluck('vinyl_master_id')->filter()->toArray();
+            $cartProductIds = $cartItems->pluck('product_id')->filter()->toArray();
+            
+            // Buscar produtos recomendados (vinis)
+            $recommendedVinyls = Product::with('productable')
+                ->where('productable_type', 'App\\Models\\VinylMaster')
+                ->whereNotIn('id', $cartProductIds) // Não mostrar produtos já no carrinho
+                ->whereHas('productable', function($query) use ($cartVinylIds) {
+                    $query->whereNotIn('id', $cartVinylIds) // Não mostrar vinis já no carrinho
+                          ->whereHas('vinylSec', function($query) {
+                              $query->where('stock', '>', 0); // Apenas produtos em estoque
+                          });
+                })
+                ->orderBy('created_at', 'desc')
+                ->limit(3)
+                ->get();
+        }
+    
         // Obter itens da wishlist do usuário
         $wishlistItems = $user->wishlist()->pluck('vinyl_master_id')->toArray();
         
@@ -170,270 +260,339 @@ class CartController extends Controller
             'wishlistItems' => $wishlistItems,
         ]);
     }
-    
-    /**
-     * Adiciona um item ao carrinho de compras.
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'vinyl_master_id' => 'required|exists:vinyl_masters,id',
-            'quantity' => 'sometimes|integer|min:1|max:10',
-        ]);
+
+/**
+ * Adiciona um item ao carrinho de compras.
+ */
+public function store(Request $request)
+{
+    // Validar dados recebidos
+    $validatedData = $request->validate([
+        'vinyl_master_id' => 'required_without:product_id|exists:vinyl_masters,id',
+        'product_id' => 'required_without:vinyl_master_id|exists:products,id',
+        'quantity' => 'required|integer|min:1|max:10',
+    ]);
+
+    // Verificar qual tipo de produto está sendo adicionado
+    if (isset($validatedData['product_id'])) {
+        // Obtém o produto do banco de dados
+        $product = Product::find($validatedData['product_id']);
         
-        $user = Auth::user();
-        $vinylMasterId = $request->vinyl_master_id;
-        $quantity = $request->quantity ?? 1;
-        
-        // Verificar se o vinil existe e está disponível
-        $vinylMaster = VinylMaster::findOrFail($vinylMasterId);
-        
-        if (!$vinylMaster->isAvailable()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este vinil não está disponível para compra no momento.'
-            ], 422);
+        // Verificar disponibilidade
+        if (!$product || !$product->is_available) {
+            return $this->jsonResponse(false, 'Produto não está disponível.');
         }
         
-        // Verificar se há estoque suficiente
-        if ($vinylMaster->vinylSec->stock < $quantity) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Quantidade solicitada não disponível em estoque. Disponível: ' . $vinylMaster->vinylSec->stock
-            ], 422);
+        // Verificar estoque
+        if (!$product->has_stock($validatedData['quantity'])) {
+            return $this->jsonResponse(false, 'Quantidade solicitada excede o estoque disponível.');
         }
         
-        // Obter ou criar o carrinho ativo do usuário
-        $cart = Cart::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->first();
-            
-        if (!$cart) {
-            $cart = new Cart();
-            $cart->user_id = $user->id;
-            $cart->session_id = Session::getId();
-            $cart->status = 'active';
-            $cart->subtotal = 0;
-            $cart->discount = 0;
-            $cart->shipping_cost = 0;
-            $cart->total = 0;
-            $cart->save();
+        // Se temos um produto polimórfico que é um VinylMaster, vamos definir o vinyl_master_id para compatibilidade
+        if ($product->productable_type === 'App\\Models\\VinylMaster') {
+            $validatedData['vinyl_master_id'] = $product->productable_id;
+        }
+    } else {
+        // Fluxo legado usando vinyl_master_id
+        $vinylMaster = VinylMaster::with('vinylSec')->find($validatedData['vinyl_master_id']);
+        
+        // Verificar disponibilidade
+        if (!$vinylMaster || !$vinylMaster->isAvailable()) {
+            return $this->jsonResponse(false, 'Disco não está disponível.');
         }
         
-        // Verificar se o item já está no carrinho
-        $existingItem = CartItem::where('user_id', $user->id)
-                               ->where('vinyl_master_id', $vinylMasterId)
-                               ->first();
-        
-        if ($existingItem) {
-            // Atualizar a quantidade
-            $newQuantity = $existingItem->quantity + $quantity;
-            
-            // Verificar novamente o estoque com a nova quantidade
-            if ($vinylMaster->vinylSec->stock < $newQuantity) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Quantidade total excede o estoque disponível. Disponível: ' . $vinylMaster->vinylSec->stock
-                ], 422);
-            }
-            
-            $existingItem->update([
-                'quantity' => $newQuantity
-            ]);
-            
-            $message = 'Quantidade atualizada no carrinho';
-        } else {
-            // Adicionar novo item ao carrinho
-            CartItem::create([
-                'user_id' => $user->id,
-                'cart_id' => $cart->id,
-                'vinyl_master_id' => $vinylMasterId,
-                'quantity' => $quantity
-            ]);
-            
-            $message = 'Item adicionado ao carrinho';
+        // Verificar estoque
+        if (!$vinylMaster->hasEnoughStock($validatedData['quantity'])) {
+            return $this->jsonResponse(false, 'Quantidade solicitada excede o estoque disponível.');
         }
         
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'cart_count' => $user->cartItems()->sum('quantity')
-            ]);
-        }
+        // Buscar product_id correspondente para o vinyl_master_id
+        $product = Product::where('productable_type', 'App\\Models\\VinylMaster')
+                       ->where('productable_id', $validatedData['vinyl_master_id'])
+                       ->first();
         
-        return redirect()->back()->with('success', $message);
+        if ($product) {
+            $validatedData['product_id'] = $product->id;
+        }
     }
     
-    /**
-     * Atualiza a quantidade de um item no carrinho.
-     */
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'quantity' => 'required|integer|min:1|max:10',
-        ]);
+    $user = Auth::user();
+    
+    // Encontrar ou criar um carrinho ativo para o usuário
+    $cart = Cart::firstOrCreate(
+        ['user_id' => $user->id, 'status' => 'active'],
+        ['session_id' => Session::getId()]
+    );
+    
+    // Verificar se o item já existe no carrinho
+    $cartItem = null;
+    
+    // Primeiro tenta encontrar pelo product_id (nova estrutura)
+    if (isset($validatedData['product_id'])) {
+        $cartItem = CartItem::where('user_id', $user->id)
+                        ->where('product_id', $validatedData['product_id'])
+                        ->where('saved_for_later', false)
+                        ->first();
+    }
+    
+    // Se não encontrou pelo product_id, tenta pelo vinyl_master_id (compatibilidade)
+    if (!$cartItem && isset($validatedData['vinyl_master_id'])) {
+        $cartItem = CartItem::where('user_id', $user->id)
+                        ->where('vinyl_master_id', $validatedData['vinyl_master_id'])
+                        ->where('saved_for_later', false)
+                        ->first();
+    }
+    
+    if ($cartItem) {
+        // Item já existe, atualizar apenas a quantidade
+        $newQuantity = $cartItem->quantity + $validatedData['quantity'];
         
-        $user = Auth::user();
-        $cartItem = CartItem::where('user_id', $user->id)->findOrFail($id);
-        $quantity = $request->quantity;
+        // Validar novamente estoque com quantidade total
+        if (isset($validatedData['product_id'])) {
+            $product = Product::find($validatedData['product_id']);
+            if (!$product->has_stock($newQuantity)) {
+                return $this->jsonResponse(false, 'Quantidade total excede o estoque disponível.');
+            }
+        } else {
+            $vinylMaster = VinylMaster::with('vinylSec')->find($validatedData['vinyl_master_id']);
+            if (!$vinylMaster->hasEnoughStock($newQuantity)) {
+                return $this->jsonResponse(false, 'Quantidade total excede o estoque disponível.');
+            }
+        }
         
+        $cartItem->quantity = $newQuantity;
+        
+        // Garantir que tenha tanto product_id quanto vinyl_master_id se disponível
+        if (isset($validatedData['product_id']) && empty($cartItem->product_id)) {
+            $cartItem->product_id = $validatedData['product_id'];
+        }
+        if (isset($validatedData['vinyl_master_id']) && empty($cartItem->vinyl_master_id)) {
+            $cartItem->vinyl_master_id = $validatedData['vinyl_master_id'];
+        }
+        
+        $cartItem->cart_id = $cart->id;
+        $cartItem->save();
+    } else {
+        // Criar um novo item no carrinho
+        $cartItem = new CartItem();
+        $cartItem->user_id = $user->id;
+        $cartItem->cart_id = $cart->id;
+        $cartItem->quantity = $validatedData['quantity'];
+        $cartItem->saved_for_later = false;
+        
+        // Garantir que tenha tanto product_id quanto vinyl_master_id se disponível
+        if (isset($validatedData['product_id'])) {
+            $cartItem->product_id = $validatedData['product_id'];
+        }
+        if (isset($validatedData['vinyl_master_id'])) {
+            $cartItem->vinyl_master_id = $validatedData['vinyl_master_id'];
+        }
+        
+        $cartItem->save();
+    }
+    
+    // Contar itens no carrinho para atualização do contador na UI
+    $cartCount = CartItem::where('user_id', $user->id)
+                       ->where('saved_for_later', false)
+                       ->count();
+    
+    // Se for uma requisição AJAX, retorna JSON
+    if ($request->expectsJson() || $request->ajax()) {
+        return $this->jsonResponse(true, 'Item adicionado ao carrinho!', ['cartCount' => $cartCount]);
+    }
+    
+    // Se for uma requisição regular, redireciona
+    return redirect()->back()->with('success', 'Item adicionado ao carrinho!');
+}
+
+/**
+ * Retorna uma resposta JSON padronizada
+ */
+private function jsonResponse(bool $success, string $message, array $data = [])
+{
+    return response()->json(array_merge(
+        ['success' => $success, 'message' => $message],
+        $data
+    ));
+}
+
+/**
+ * Atualiza a quantidade de um item no carrinho.
+ */
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'quantity' => 'required|integer|min:1|max:10',
+    ]);
+    
+    $user = Auth::user();
+    $cartItem = CartItem::where('user_id', $user->id)->findOrFail($id);
+    $quantity = $request->quantity;
+    
+    // Verificar disponibilidade e estoque com base no tipo de produto
+    // Primeiro tenta usar o sistema de produtos polimórficos
+    if ($cartItem->product_id) {
+        $product = $cartItem->product;
+        
+        // Verificar disponibilidade
+        if (!$product || !$product->is_available) {
+            return $this->jsonResponse(false, 'Produto não está mais disponível para compra.', [], 422);
+        }
+        
+        // Verificar estoque
+        if (!$product->has_stock($quantity)) {
+            $availableStock = $product->stock ?? 0;
+            return $this->jsonResponse(false, 
+                "Quantidade solicitada não disponível em estoque. Disponível: {$availableStock}", 
+                [], 
+                422
+            );
+        }
+    } 
+    // Sistema legado (vinyl_master_id)
+    else if ($cartItem->vinyl_master_id) {
         // Verificar se o vinil ainda está disponível
         if (!$cartItem->vinylMaster->isAvailable()) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Este vinil não está mais disponível para compra.'
-                ], 422);
-            }
-            
-            return redirect()->back()->with('error', 'Este vinil não está mais disponível para compra.');
+            return $this->jsonResponse(false, 'Este disco não está mais disponível para compra.', [], 422);
         }
         
         // Verificar se há estoque suficiente
         if ($cartItem->vinylMaster->vinylSec->stock < $quantity) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Quantidade solicitada não disponível em estoque. Disponível: ' . $cartItem->vinylMaster->vinylSec->stock
-                ], 422);
-            }
-            
-            return redirect()->back()->with('error', 'Quantidade solicitada não disponível em estoque. Disponível: ' . $cartItem->vinylMaster->vinylSec->stock);
+            return $this->jsonResponse(false, 
+                "Quantidade solicitada não disponível em estoque. Disponível: {$cartItem->vinylMaster->vinylSec->stock}", 
+                [], 
+                422
+            );
         }
-        
-        // Atualizar a quantidade
-        $cartItem->update([
-            'quantity' => $quantity
+    }
+    
+    // Atualizar a quantidade
+    $cartItem->update([
+        'quantity' => $quantity
+    ]);
+    
+    // Contar itens no carrinho para atualização do contador na UI
+    $cartCount = CartItem::where('user_id', $user->id)
+                       ->where('saved_for_later', false)
+                       ->count();
+    
+    // Se for uma requisição AJAX, retorna JSON padronizado
+    if ($request->expectsJson() || $request->ajax()) {
+        return $this->jsonResponse(true, 'Quantidade atualizada', [
+            'item' => [
+                'id' => $cartItem->id,
+                'quantity' => $cartItem->quantity,
+                'subtotal' => $cartItem->subtotal,
+            ],
+            'cart_total' => $user->cart_total,
+            'cartCount' => $cartCount
         ]);
-        
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Quantidade atualizada',
-                'item' => [
-                    'id' => $cartItem->id,
-                    'quantity' => $cartItem->quantity,
-                    'subtotal' => $cartItem->subtotal,
-                ],
-                'cart_total' => $user->cart_total
-            ]);
-        }
-        
-        return redirect()->back()->with('success', 'Quantidade atualizada');
     }
     
-    /**
-     * Remove um item do carrinho.
-     */
-    public function destroy($id)
-    {
-        $user = Auth::user();
-        $cartItem = CartItem::where('user_id', $user->id)->findOrFail($id);
-        
-        $cartItem->delete();
-        
-        if (request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Item removido do carrinho',
-                'cart_count' => $user->cartItems()->sum('quantity'),
-                'cart_total' => $user->cart_total
-            ]);
-        }
-        
-        return redirect()->back()->with('success', 'Item removido do carrinho');
+    // Se for uma requisição regular, redireciona
+    return redirect()->back()->with('success', 'Quantidade atualizada');
+}
+
+/**
+ * Remove um item do carrinho.
+ */
+public function destroy(Request $request, $id)
+{
+    $user = Auth::user();
+    $cartItem = CartItem::where('user_id', $user->id)->findOrFail($id);
+    
+    $cartItem->delete();
+    
+    // Contar itens no carrinho para atualização do contador na UI
+    $cartCount = CartItem::where('user_id', $user->id)
+                       ->where('saved_for_later', false)
+                       ->count();
+                       
+    // Se for uma requisição AJAX, retorna JSON padronizado
+    if ($request->expectsJson() || $request->ajax()) {
+        return $this->jsonResponse(true, 'Item removido do carrinho', [
+            'cartCount' => $cartCount,
+            'cart_total' => $user->cart_total
+        ]);
     }
     
-    /**
-     * Limpa o carrinho completamente.
-     */
-    public function clear()
-    {
-        $user = Auth::user();
-        
-        $user->cartItems()->delete();
-        
-        if (request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Carrinho esvaziado'
-            ]);
-        }
-        
-        return redirect()->back()->with('success', 'Carrinho esvaziado');
-    }
+    // Se for uma requisição regular, redireciona
+    return redirect()->back()->with('success', 'Item removido do carrinho');
+}
+
+/**
+ * Limpa o carrinho completamente.
+ */
+// public function clear(Request $request)
+// {
+//     $user = Auth::user();
     
-    /**
-     * Transfere todos os itens da wishlist para o carrinho.
-     */
+//     $user->cartItems()->delete();
+    
+//     // Se for uma requisição AJAX, retorna JSON padronizado
+//     if ($request->expectsJson() || $request->ajax()) {
+//         return $this->jsonResponse(true, 'Carrinho esvaziado');
+//     }
+    
+//     // Se for uma requisição regular, redireciona
+//     return redirect()->back()->with('success', 'Carrinho esvaziado');
+// }
+
+/**
+ * Transfere todos os itens da wishlist para o carrinho.
+ */
     public function addFromWishlist()
     {
         $user = Auth::user();
-        $wishlistItems = $user->wishlist()->with('vinylMaster')->get();
+        $wishlistItems = $user->wishlist()->with('vinylMaster.vinylSec')->get();
+        
+        // Obter ou criar o carrinho ativo
+        $cart = Cart::firstOrCreate(
+            ['user_id' => $user->id, 'status' => 'active'],
+            [
+                'session_id' => Session::getId(),
+                'subtotal' => 0,
+                'discount' => 0,
+                'shipping_cost' => 0,
+                'total' => 0
+            ]
+        );
+        
         $addedCount = 0;
         $notAvailable = 0;
         
-        // Obter ou criar o carrinho ativo do usuário
-        $cart = Cart::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->first();
-            
-        if (!$cart) {
-            $cart = new Cart();
-            $cart->user_id = $user->id;
-            $cart->session_id = Session::getId();
-            $cart->status = 'active';
-            $cart->subtotal = 0;
-            $cart->discount = 0;
-            $cart->shipping_cost = 0;
-            $cart->total = 0;
-            $cart->save();
-        }
-        
         foreach ($wishlistItems as $wishlistItem) {
-            // Verificar se o vinil existe e está disponível
-            if ($wishlistItem->vinylMaster && $wishlistItem->vinylMaster->isAvailable()) {
-                // Verificar se o item já está no carrinho
-                $existingItem = CartItem::where('user_id', $user->id)
-                                       ->where('vinyl_master_id', $wishlistItem->vinyl_master_id)
-                                       ->first();
-                
-                if ($existingItem) {
-                    // Atualizar a quantidade (limitado ao estoque disponível)
-                    $newQuantity = min(
-                        $existingItem->quantity + 1, 
-                        $wishlistItem->vinylMaster->vinylSec->stock
-                    );
-                    
-                    $existingItem->update([
-                        'quantity' => $newQuantity
-                    ]);
-                } else {
-                    // Adicionar novo item ao carrinho
-                    CartItem::create([
-                        'user_id' => $user->id,
-                        'cart_id' => $cart->id,
-                        'vinyl_master_id' => $wishlistItem->vinyl_master_id,
-                        'quantity' => 1
-                    ]);
-                }
-                
-                // Remover da wishlist
-                $wishlistItem->delete();
-                
-                $addedCount++;
-            } else {
+            // Verificar disponibilidade
+            if (!$wishlistItem->vinylMaster || !$wishlistItem->vinylMaster->isAvailable()) {
                 $notAvailable++;
+                continue;
             }
+            
+            // Adicionar ou atualizar item no carrinho
+            CartItem::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'vinyl_master_id' => $wishlistItem->vinyl_master_id
+                ],
+                [
+                    'cart_id' => $cart->id,
+                    'price' => $wishlistItem->vinylMaster->vinylSec->price,
+                    'quantity' => DB::raw("LEAST(quantity + 1, {$wishlistItem->vinylMaster->vinylSec->stock})")
+                ]
+            );
+            
+            // Remover da wishlist e incrementar contador
+            $wishlistItem->delete();
+            $addedCount++;
         }
         
-        if ($notAvailable > 0) {
-            $message = "$addedCount itens adicionados ao carrinho. $notAvailable itens não estão disponíveis para compra no momento.";
-        } else {
-            $message = "$addedCount itens adicionados ao carrinho.";
-        }
+        // Atualizar totais do carrinho
+        $this->cartService->updateCartTotals($cart);
         
+        // Preparar mensagem
+        $message = $this->prepareTransferMessage($addedCount, $notAvailable);
+        
+        // Retornar resposta apropriada
         if (request()->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -444,10 +603,19 @@ class CartController extends Controller
         
         return redirect()->back()->with('success', $message);
     }
-    
-    /**
-     * Mover um item do carrinho para a lista "Salvar para depois".
-     */
+
+    // Método auxiliar para construir a mensagem
+    private function prepareTransferMessage($addedCount, $notAvailable)
+    {
+        $message = "";
+        if ($addedCount > 0) {
+            $message = $addedCount . " " . ($addedCount == 1 ? 'item transferido' : 'itens transferidos') . " para o carrinho.";
+        }
+        if ($notAvailable > 0) {
+            $message .= ($message ? " " : "") . $notAvailable . " " . ($notAvailable == 1 ? 'item não está' : 'itens não estão') . " disponível para compra.";
+        }
+        return $message ?: "Nenhum item foi transferido para o carrinho.";
+    }
     public function saveForLater($id)
     {
         $user = Auth::user();

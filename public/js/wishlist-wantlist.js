@@ -129,9 +129,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (wishlistButtons.length > 0) {
-            const wishlistIds = Array.from(wishlistButtons).map(btn => btn.getAttribute('data-wishlist-id'));
+            const wishlistIds = Array.from(wishlistButtons)
+                .map(btn => btn.getAttribute('data-wishlist-id'))
+                .filter(id => id && id.trim() !== ''); // Filter out any empty or null IDs
             
             // Verificar quais IDs estão na wishlist
+            console.log('Enviando wishlist IDs para verificação:', wishlistIds);
             fetch('/wishlist/check', {
                 method: 'POST',
                 headers: {
@@ -141,7 +144,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ ids: wishlistIds })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Erro na resposta:', response.status);
+                    return response.json().then(err => {
+                        console.error('Detalhes do erro:', err);
+                        throw err;
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 // Marcar os botões correspondentes
                 console.log('Wishlist check response:', data);
@@ -169,9 +181,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (wantlistButtons.length > 0) {
-            const wantlistIds = Array.from(wantlistButtons).map(btn => btn.getAttribute('data-wantlist-id'));
+            const wantlistIds = Array.from(wantlistButtons)
+                .map(btn => btn.getAttribute('data-wantlist-id'))
+                .filter(id => id && id.trim() !== ''); // Filter out any empty or null IDs
             
             // Verificar quais IDs estão na wantlist
+            console.log('Enviando wantlist IDs para verificação:', wantlistIds);
             fetch('/wantlist/check', {
                 method: 'POST',
                 headers: {
@@ -181,7 +196,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ ids: wantlistIds })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Erro na resposta:', response.status);
+                    return response.json().then(err => {
+                        console.error('Detalhes do erro:', err);
+                        throw err;
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 // Marcar os botões correspondentes
                 console.log('Wantlist check response:', data);

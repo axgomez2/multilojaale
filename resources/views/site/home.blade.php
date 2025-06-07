@@ -55,150 +55,98 @@
 
 <!-- Seção de produtos em destaque -->
 <section class="py-12 bg-gray-50">
-    <div >
-        <h2 class="text-2xl font-semibold text-slate-800 mb-8 text-left subpixel-antialiased ">Discos em Destaque</h2>
+     
+    
+
+
+
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Discos em Destaque -->
+    <h2 class="text-2xl font-semibold text-slate-800 my-8 text-left subpixel-antialiased">Discos em Destaque</h2>
        
+    @if($featuredVinyls->isNotEmpty())
+        <!-- Grade de produtos usando o componente vinyl-card -->
+        <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
+            @foreach($featuredVinyls as $vinyl)
+                <x-site.vinyl-card :vinyl="$vinyl" size="normal"
+                    :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
+                    :inWantlist="in_array($vinyl->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
+            @endforeach
+        </div>
         
-        @if($featuredVinyls->isNotEmpty())
-            <!-- Grade de produtos usando o componente vinyl-card -->
+        @if($featuredVinyls->count() > 8)
+            <div class="text-center mt-6 mb-12">
+                <a href="{{ route('site.category', 'destaque') }}" class="inline-flex items-center px-6 py-3 text-base font-medium text-center text-black bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
+                    Ver mais destaques
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        @endif
+    @else
+        <!-- Mensagem quando não há discos em destaque -->
+        <div class="bg-slate-800 rounded-lg p-8 text-center mb-12">
+            <p class="text-white subpixel-antialiased text-lg">Novos discos em destaque em breve!</p>
+        </div>
+    @endif
+
+
+    <!-- Últimos Discos Adicionados -->
+    <h2 class="text-2xl font-semibold text-slate-800 my-8 text-left subpixel-antialiased">Últimos Discos Adicionados</h2>
+    
+    @if($latestVinyls->isNotEmpty())
+        <!-- Grade de produtos usando o componente vinyl-card -->
+        <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
+            @foreach($latestVinyls->take(20) as $vinyl)
+                <x-site.vinyl-card :vinyl="$vinyl" size="normal"
+                    :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
+                    :inWantlist="in_array($vinyl->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
+            @endforeach
+        </div>
+        
+        <div class="text-center mt-6 mb-12">
+            <a href="{{ route('site.products') }}" class="inline-flex items-center px-6 py-3 text-base font-medium text-center text-black bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
+                Ver todos os discos
+                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+    @else
+        <!-- Mensagem quando não há discos em recentes -->
+        <div class="bg-slate-800 rounded-lg p-8 text-center mb-12">
+            <p class="text-white subpixel-antialiased text-lg">Novos discos serão adicionados em breve!</p>
+        </div>
+    @endif
+    
+    <!-- Categorias principais -->
+    @foreach($categories as $categoryData)
+        @if($categoryData['vinyls']->count() >= 3)
+            <h2 class="text-2xl font-semibold text-slate-800 my-8 text-left subpixel-antialiased">{{ $categoryData['category']->nome }}</h2>
+            
             <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
-                @foreach($featuredVinyls as $vinyl)
+                @foreach($categoryData['vinyls']->take(10) as $vinyl)
                     <x-site.vinyl-card :vinyl="$vinyl" size="normal"
                         :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
                         :inWantlist="in_array($vinyl->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
                 @endforeach
             </div>
             
-            @if($featuredVinyls->count() > 8)
-                <div class="text-center mt-6">
-                    <a href="{{ route('site.category', 'destaque') }}" class="inline-flex items-center px-6 py-3 text-base font-medium text-center text-black bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
-                        Ver mais destaques
+            @if($categoryData['vinyls']->count() > 10)
+                <div class="text-center mt-6 mb-12">
+                    <a href="{{ route('site.category', $categoryData['category']->slug) }}" class="inline-flex items-center px-6 py-3 text-base font-medium text-center text-black bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
+                        Ver mais {{ $categoryData['category']->nome }}
                         <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
                     </a>
                 </div>
             @endif
-        @else
-            <!-- Mensagem quando não há discos em destaque -->
-            <div class="bg-slate-800 rounded-lg p-8 text-center">
-                <p class="text-black subpixel-antialiased text-lg">Novos discos em destaque em breve!</p>
-            </div>
         @endif
-    </div>
+    @endforeach
+</div>
 </section>
-
-<div class="px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Carrossel de lançamentos mais recentes -->
-    @if($latestVinyls->isNotEmpty())
-        <div class="hidden md:block">
-            <x-site.vinyl-carousel 
-                title="Lançamentos Recentes" 
-                :vinyls="$latestVinyls"
-                :wishlistItems="$wishlistItems"
-                :wantlistItems="$wantlistItems" />  
-        </div>
-    @endif
-    
-    <!-- Carrossel por categorias para desktop -->
-    @foreach($categories as $categoryData)
-        <div class="hidden md:block text-slate-800">
-            <x-site.vinyl-carousel 
-                title="{{ $categoryData['category']->nome }}" 
-                :vinyls="$categoryData['vinyls']"
-                :slug="$categoryData['category']->slug"
-                :wishlistItems="$wishlistItems"
-                :wantlistItems="$wantlistItems" 
-            />
-        </div>
-    @endforeach
-    
-    <!-- Carrossel por categorias para dispositivos móveis -->
-    @foreach($categories as $categoryData)
-        @if($categoryData['vinyls']->isNotEmpty())
-            <div class="mb-12">
-                <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-semibold text-slate-800 text-left subpixel-antialiased">{{ $categoryData['category']->nome }}</h2>
-                    <a href="{{ route('site.category', $categoryData['category']->slug) }}" class="text-sm text-indigo-500 hover:text-indigo-600 flex items-center">
-                        Ver todos
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </a>
-                </div>
-                <div x-data="{ 
-                    scroll: 0, 
-                    totalItems: {{ $categoryData['vinyls']->count() }}, 
-                    get visibleItems() {
-                        return window.innerWidth < 640 ? 1 : 
-                               window.innerWidth < 768 ? 2 : 
-                               window.innerWidth < 1024 ? 3 : 4;
-                    } 
-                }" 
-                x-init="
-                    window.addEventListener('resize', () => {
-                        scroll = Math.min(scroll, totalItems - visibleItems);
-                    });
-                " 
-                class="relative">
-                    <!-- Botão de navegação esquerda -->
-                    <button @click="scroll = Math.max(0, scroll - visibleItems)" 
-                            class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 md:p-3 focus:outline-none"
-                            :class="{'opacity-50 cursor-not-allowed': scroll <= 0, 'opacity-100 cursor-pointer': scroll > 0}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                    
-                    <!-- Carrossel -->
-                    <div class="overflow-hidden">
-                        <div class="flex pb-4 transition-transform duration-300 ease-in-out" 
-                             :style="`transform: translateX(-${scroll * (100 / visibleItems)}%)`">
-                            @foreach($categoryData['vinyls'] as $vinyl)
-                                <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 flex-shrink-0 px-2" 
-                                     :class="{
-                                        'w-full': visibleItems === 1,
-                                        'w-1/2': visibleItems === 2,
-                                        'w-1/3': visibleItems === 3,
-                                        'w-1/4': visibleItems === 4
-                                     }">
-                                    <x-site.vinyl-card :vinyl="$vinyl" size="normal"
-                                        :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
-                                        :inWantlist="in_array($vinyl->id, is_array($wantlistItems) ? $wantlistItems : ($wantlistItems ? $wantlistItems->toArray() : []))" />
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    
-                    <!-- Botão de navegação direita -->
-                    <button @click="scroll = Math.min(totalItems - visibleItems, scroll + visibleItems)" 
-                            class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 md:p-3 focus:outline-none"
-                            :class="{'opacity-50 cursor-not-allowed': scroll >= totalItems - visibleItems, 'opacity-100 cursor-pointer': scroll < totalItems - visibleItems}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                    
-                    <!-- Pagination dots -->
-                    <div class="flex justify-center mt-4" x-show="Math.ceil(totalItems / visibleItems) > 1">
-                        <template x-for="(_, index) in Array.from({ length: Math.ceil(totalItems / visibleItems) })" :key="index">
-                            <button class="mx-1 w-2 h-2 rounded-full focus:outline-none transition-all duration-300 ease-in-out"
-                                    :class="{
-                                        'bg-indigo-600': Math.floor(scroll / visibleItems) === index,
-                                        'bg-gray-300': Math.floor(scroll / visibleItems) !== index
-                                    }"
-                                    @click="scroll = index * visibleItems"
-                                    :aria-label="`Go to page ${index + 1}`">
-                            </button>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        @endif
-    @endforeach
-
-    </div>
-
     entenda a classificação de discos usados e sua importância:
     <section class="bg-black text-white p-6">
   <div class="container mx-auto">

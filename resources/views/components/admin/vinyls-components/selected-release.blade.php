@@ -1,6 +1,6 @@
 @props(['release'])
 
-<div class="max-w-6xl mx-auto" x-data="{ 
+<div class="max-w-6xl mx-auto" x-data="{
     selectedCoverIndex: 0,
     showMainImage(index) {
         this.selectedCoverIndex = index;
@@ -9,41 +9,41 @@
     <h3 class="text-xl font-semibold mb-4 text-gray-900">Você selecionou o disco: {{ $release['title'] }}</h3>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Image Column -->                        
+        <!-- Image Column -->
         <div class="md:col-span-1">
             <!-- Capa do disco selecionada -->
             <div class="mb-3">
                 @if(isset($release['images']) && count($release['images']) > 0)
                     <div class="relative group">
                         <template x-for="(image, index) in {{ json_encode($release['images']) }}" :key="index">
-                            <img :src="image.uri" 
-                                 :alt="'{{ $release['title'] }} - ' + (index + 1)" 
-                                 class="rounded-lg shadow-lg w-full object-cover" 
+                            <img :src="image.uri"
+                                 :alt="'{{ $release['title'] }} - ' + (index + 1)"
+                                 class="rounded-lg shadow-lg w-full object-cover"
                                  style="height: 300px;"
                                  x-show="selectedCoverIndex === index"
                                  x-transition:enter="transition ease-out duration-300"
                                  x-transition:enter-start="opacity-0 transform scale-95"
                                  x-transition:enter-end="opacity-100 transform scale-100">
                         </template>
-                        
+
                         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
                             <p class="text-white text-sm">Imagem <span x-text="selectedCoverIndex + 1"></span> de <span x-text="{{ count($release['images']) }}"></span></p>
                         </div>
                     </div>
-                    
+
                     <!-- Seletor de imagens -->
                     <div class="mt-3">
                         <h5 class="text-sm font-medium text-gray-700 mb-2">Selecione a imagem para capa:</h5>
                         <div class="grid grid-cols-5 gap-2">
                             <template x-for="(image, index) in {{ json_encode($release['images']) }}" :key="index">
-                                <div 
-                                    @click="showMainImage(index)" 
+                                <div
+                                    @click="showMainImage(index)"
                                     class="relative cursor-pointer rounded-md overflow-hidden transition-all duration-200"
                                     :class="selectedCoverIndex === index ? 'ring-2 ring-blue-500' : 'hover:opacity-80'">
-                                    <img :src="image.uri150 || image.uri" 
-                                         class="w-full h-16 object-cover" 
+                                    <img :src="image.uri150 || image.uri"
+                                         class="w-full h-16 object-cover"
                                          :alt="'{{ $release['title'] }} - ' + (index + 1)">
-                                    <div 
+                                    <div
                                         x-show="selectedCoverIndex === index"
                                         class="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
                                         <div class="bg-blue-500 text-white rounded-full p-1">
@@ -65,7 +65,7 @@
                     </div>
                 @endif
             </div>
-            
+
             <!-- Informações do artista com imagem -->
             @if(isset($release['artists']))
                 <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
@@ -101,7 +101,7 @@
                                     $artistSlug = Str::slug($artistName);
                                     $artistUrl = "https://www.discogs.com/artist/{$artistId}-{$artistSlug}";
                                 @endphp
-                                <a href="{{ $artistUrl }}" 
+                                <a href="{{ $artistUrl }}"
                                     target="_blank"
                                     class="text-xs text-blue-600 hover:underline mt-1 inline-block">
                                     Ver perfil no Discogs
@@ -109,7 +109,7 @@
                             @endif
                         </div>
                     </div>
-                    
+
                     @if(isset($release['styles']))
                         <div class="flex flex-wrap gap-1 mt-2">
                             @foreach(is_array($release['styles']) ? $release['styles'] : [] as $style)
@@ -156,7 +156,7 @@
                         <h4 class="text-sm font-medium text-gray-500">Gravadora</h4>
                         <p class="text-base text-gray-900">{{ !empty($release['labels']) ? implode(', ', array_column($release['labels'], 'name')) : 'Desconhecido' }}</p>
                     </div>
-                    
+
                     <!-- Número de Catálogo -->
                     @if(!empty($release['labels'][0]['catno']))
                     <div>
@@ -196,7 +196,7 @@
                                     @endif
                                 </p>
                             </div>
-                            
+
                             <!-- Número de Catálogo (já adicionado anteriormente) -->
                             <div>
                                 <h5 class="text-xs font-medium text-gray-500">Cat. nº</h5>
@@ -204,7 +204,7 @@
                                     {{ !empty($release['labels'][0]['catno']) ? $release['labels'][0]['catno'] : 'N/A' }}
                                 </p>
                             </div>
-                            
+
                             <!-- Outros Identificadores -->
                             @if(!empty($release['identifiers']))
                                 @foreach($release['identifiers'] as $identifier)
@@ -218,7 +218,7 @@
                             @endif
                         </div>
                     </div>
-                    
+
                     <!-- Estatísticas de Coleção -->
                     <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                         <h4 class="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Estatísticas de Coleção</h4>
@@ -230,7 +230,7 @@
                                     {{ isset($release['community']['have']) ? number_format($release['community']['have'], 0, ',', '.') : 'N/A' }}
                                 </p>
                             </div>
-                            
+
                             <!-- Querem -->
                             <div>
                                 <h5 class="text-xs font-medium text-gray-500">Querem</h5>
@@ -238,7 +238,7 @@
                                     {{ isset($release['community']['want']) ? number_format($release['community']['want'], 0, ',', '.') : 'N/A' }}
                                 </p>
                             </div>
-                            
+
                             <!-- Avaliação Média -->
                             <div>
                                 <h5 class="text-xs font-medium text-gray-500">Avaliação Média</h5>
@@ -255,7 +255,7 @@
                                     @endif
                                 </p>
                             </div>
-                            
+
                             <!-- Avaliações -->
                             <div>
                                 <h5 class="text-xs font-medium text-gray-500">Avaliações</h5>
@@ -263,7 +263,7 @@
                                     {{ isset($release['community']['rating']['count']) ? number_format($release['community']['rating']['count'], 0, ',', '.') : 'N/A' }}
                                 </p>
                             </div>
-                            
+
                             <!-- Quantidade à venda -->
                             <div>
                                 <h5 class="text-xs font-medium text-gray-500">À venda</h5>
@@ -273,7 +273,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Informações de Preço -->
                     @php
                         $rawMarketData = $release['raw_market_data'] ?? [];
@@ -292,7 +292,7 @@
                                     @endif
                                 </p>
                             </div>
-                            
+
                             <!-- Preço Mediano -->
                             <div>
                                 <h5 class="text-xs font-medium text-gray-500">Mediano</h5>
@@ -304,7 +304,7 @@
                                     @endif
                                 </p>
                             </div>
-                            
+
                             <!-- Preço Alto -->
                             <div>
                                 <h5 class="text-xs font-medium text-gray-500">Alto</h5>
@@ -318,7 +318,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Preço Sugerido -->
                     <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg border border-green-200 dark:border-green-700">
                         <h4 class="text-base font-medium mb-2 text-green-700 dark:text-green-300">Preço Sugerido para Venda</h4>
@@ -333,12 +333,12 @@
                             <span class="text-xs">{{ isset($release['price_source']) ? '(Fonte: ' . $release['price_source'] . ')' : '' }}</span>
                         </p>
                     </div>
-                    
+
                     <!-- SEÇÃO DE DIAGNÓSTICO - Mostra toda a resposta da API -->
                     <div class="bg-gray-100 p-4 rounded-lg border border-gray-300 mt-4">
                         <div class="flex justify-between items-center mb-2">
                             <h4 class="text-base font-medium text-gray-800">Dados Completos da API (Diagnóstico)</h4>
-                            <button 
+                            <button
                                 x-data="{}"
                                 x-on:click="$el.parentNode.nextElementSibling.classList.toggle('hidden')"
                                 class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded">
@@ -348,15 +348,15 @@
                         <div class="hidden overflow-auto" style="max-height: 500px;">
                             <div class="text-sm font-medium mb-2 text-gray-700">Market Data:</div>
                             <pre class="text-xs bg-gray-200 p-2 rounded overflow-x-auto mb-3">{{ isset($release['raw_market_data']) ? json_encode($release['raw_market_data'], JSON_PRETTY_PRINT) : 'Dados de mercado não disponíveis' }}</pre>
-                            
+
                             <div class="text-sm font-medium mb-2 text-gray-700">Brazil Listings:</div>
                             <pre class="text-xs bg-gray-200 p-2 rounded overflow-x-auto mb-3">{{ isset($release['brazil_listings']) ? json_encode($release['brazil_listings'], JSON_PRETTY_PRINT) : 'Dados do Brasil não disponíveis' }}</pre>
-                            
+
                             <div class="text-sm font-medium mb-2 text-gray-700">Release Data:</div>
                             <pre class="text-xs bg-gray-200 p-2 rounded overflow-x-auto">{{ json_encode($release, JSON_PRETTY_PRINT) }}</pre>
                         </div>
                     </div>
-                    
+
                     <!-- Dados do Brasil (se disponíveis) -->
                     @if(isset($release['brazil_listings']) && is_array($release['brazil_listings']) && count($release['brazil_listings']) > 0)
                         <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
@@ -380,7 +380,7 @@
                                         {{ $brLowestPrice ? 'R$ ' . number_format($brLowestPrice, 2, ',', '.') : 'N/A' }}
                                     </p>
                                 </div>
-                                
+
                                 <!-- Preço Médio Brasil -->
                                 <div>
                                     <h5 class="text-xs font-medium text-blue-600 dark:text-blue-400">Preço Médio</h5>
@@ -394,7 +394,7 @@
                                         {{ $brMedianPrice ? 'R$ ' . number_format($brMedianPrice, 2, ',', '.') : 'N/A' }}
                                     </p>
                                 </div>
-                                
+
                                 <!-- Preço Alto Brasil -->
                                 <div>
                                     <h5 class="text-xs font-medium text-blue-600 dark:text-blue-400">Maior Preço</h5>
@@ -449,18 +449,18 @@
                     class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 inline-flex items-center">
                     Link do disco no Discogs
                 </a>
-                
+
                 <!-- Botão de salvar disco usando formulário tradicional -->
                 <form action="{{ route('admin.vinyls.store') }}" method="POST" class="inline-block">
                     @csrf
                     <input type="hidden" name="release_id" value="{{ $release['id'] }}">
                     <input type="hidden" name="selected_cover_index" x-bind:value="selectedCoverIndex">
-                    
+
                     <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
                         <div class="py-2">
                             <span class="text-sm text-gray-600">Imagem de capa selecionada: <span class="font-medium" x-text="selectedCoverIndex + 1"></span></span>
                         </div>
-                        
+
                         <button type="submit"
                                 class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800 inline-flex items-center">
                             <span>Salvar disco</span>

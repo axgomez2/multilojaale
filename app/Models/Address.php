@@ -75,7 +75,8 @@ class Address extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'is_default' => 'boolean',
+        'is_default_shipping' => 'boolean',
+        'is_default_billing' => 'boolean',
         'is_active' => 'boolean',
     ];
     
@@ -118,19 +119,44 @@ class Address extends Model
     }
     
     /**
-     * Define o endereço como padrão e remove o padrão de outros endereços do mesmo usuário.
+     * Define o endereço como padrão de entrega e remove o padrão de outros endereços do mesmo usuário.
      */
-    public function setAsDefault(): bool
+    public function setAsDefaultShipping(): bool
     {
         // Primeiro, remove o padrão de todos os outros endereços do usuário
         self::where('user_id', $this->user_id)
             ->where('id', '!=', $this->id)
-            ->where('is_default', true)
-            ->update(['is_default' => false]);
+            ->where('is_default_shipping', true)
+            ->update(['is_default_shipping' => false]);
             
-        // Define este endereço como padrão
-        $this->is_default = true;
+        // Define este endereço como padrão de entrega
+        $this->is_default_shipping = true;
         
         return $this->save();
+    }
+
+    /**
+     * Define o endereço como padrão de cobrança e remove o padrão de outros endereços do mesmo usuário.
+     */
+    public function setAsDefaultBilling(): bool
+    {
+        // Primeiro, remove o padrão de todos os outros endereços do usuário
+        self::where('user_id', $this->user_id)
+            ->where('id', '!=', $this->id)
+            ->where('is_default_billing', true)
+            ->update(['is_default_billing' => false]);
+            
+        // Define este endereço como padrão de cobrança
+        $this->is_default_billing = true;
+        
+        return $this->save();
+    }
+    
+    /**
+     * @deprecated Use setAsDefaultShipping ou setAsDefaultBilling em vez deste método
+     */
+    public function setAsDefault(): bool
+    {
+        return $this->setAsDefaultShipping();
     }
 }

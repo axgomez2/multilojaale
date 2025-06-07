@@ -8,7 +8,7 @@ use App\Models\VinylMaster;
 use App\Models\Artist;
 use App\Models\Wishlist;
 use App\Models\Wantlist;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Auth; 
 
 class VinylDetailsController extends Controller
 {

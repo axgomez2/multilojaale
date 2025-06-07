@@ -139,11 +139,19 @@ class User extends Authenticatable implements MustVerifyEmail
     }
     
     /**
-     * Obtém o endereço padrão do usuário
+     * Obtém o endereço padrão de entrega do usuário
      */
     public function defaultAddress()
     {
-        return $this->hasOne(Address::class)->where('is_default', true)->where('is_active', true);
+        return $this->hasOne(Address::class)->where('is_default_shipping', true)->where('is_active', true);
+    }
+    
+    /**
+     * Obtém o endereço padrão de cobrança do usuário
+     */
+    public function defaultBillingAddress()
+    {
+        return $this->hasOne(Address::class)->where('is_default_billing', true)->where('is_active', true);
     }
     
     /**

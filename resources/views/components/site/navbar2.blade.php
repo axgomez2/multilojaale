@@ -1,6 +1,6 @@
 @props(['store' => null])
 
-<nav class="bg-black border-b border-slate-800 w-full">
+<nav class="bg-stone-800 border-b border-slate-800 w-full">
     <div class="max-w-7xl mx-auto flex items-center justify-between py-3 px-4 md:py-3 md:px-4">
         <!-- Botão menu mobile -->
         <div class="flex items-center md:hidden">
@@ -11,7 +11,7 @@
             </button>
             <a href="{{ route('home') }}" class="flex-shrink-0 flex items-center">
                 @if(isset($store) && $store->logo_path)
-                    <img class="h-8 w-auto m-2" src="{{ asset('storage/' . $store->logo_path) }}" alt="{{ $store->name }}">
+                    <img class="h-16 w-auto m-2" src="{{ asset('storage/' . $store->logo_path) }}" alt="{{ $store->name }}">
                 @else
                     <span class="text-lg font-bold">{{ isset($store) ? $store->name : 'Loja Online' }}</span>
                 @endif
@@ -21,7 +21,7 @@
         <div class="items-center space-x-2 min-w-max hidden md:flex">
             <a href="{{ route('home') }}" class="flex-shrink-0 flex items-center">
                 @if(isset($store) && $store->logo_path)
-                    <img class="h-12 w-auto m-2" src="{{ asset('storage/' . $store->logo_path) }}" alt="{{ $store->name }}">
+                    <img class="h-16 w-auto m-2" src="{{ asset('storage/' . $store->logo_path) }}" alt="{{ $store->name }}">
                 @else
                     <span class="text-lg font-bold">{{ isset($store) ? $store->name : 'Loja Online' }}</span>
                 @endif
@@ -29,14 +29,14 @@
         </div>
         <!-- Campo de busca centralizado (desktop) -->
         <div class="hidden md:flex flex-1 justify-center">
-            <div class="flex w-full max-w-2xl">
-                <input type="text" placeholder="Buscar discos, artistas, gêneros..." class="flex-1 pl-4 pr-2 py-3 rounded-l-full border border-slate-800 bg-slate-100 text-slate-900 text-lg font-semibold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400" style="font-family: 'Montserrat', 'Inter', 'Arial', sans-serif;" />
-                <button class="bg-yellow-400 text-slate-900 px-4 rounded-r-full flex items-center justify-center hover:bg-yellow-500 hover:text-black transition-colors">
+            <form action="{{ route('site.search') }}" method="GET" class="flex w-full max-w-2xl">
+                <input type="text" name="q" placeholder="Buscar discos, artistas, gêneros..." class="flex-1 pl-4 pr-2 py-3 rounded-l-full border border-slate-800 bg-slate-100 text-stone-900 text-lg font-semibold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400" style="font-family: 'Montserrat', 'Inter', 'Arial', sans-serif;" />
+                <button type="submit" class="bg-yellow-400 text-stone-900 px-4 rounded-r-full flex items-center justify-center hover:bg-yellow-500 hover:text-black transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
                     </svg>
                 </button>
-            </div>
+            </form>
         </div>
         <!-- Ícone de busca (mobile) -->
         <div class="md:hidden flex items-center">
@@ -50,12 +50,14 @@
                 <template x-if="open">
                     <div class="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-60">
                         <div class="relative w-full max-w-md mx-auto px-4 mt-[50px]">
-                            <input type="text" placeholder="Buscar..." class="w-full pl-12 pr-12 py-4 rounded-full border border-slate-700 bg-slate-100 text-slate-900 font-semibold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-lg transition-all duration-200 text-xl" style="font-family: 'Montserrat', 'Inter', 'Arial', sans-serif;" autofocus />
-                            <span class="absolute left-6 top-1/2 transform -translate-y-1/2 text-yellow-400">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
-                                </svg>
-                            </span>
+                            <form action="{{ route('site.search') }}" method="GET" class="relative">
+                                <input type="text" name="q" placeholder="Buscar discos, artistas, gêneros..." class="w-full pl-12 pr-12 py-4 rounded-full border border-slate-700 bg-slate-100 text-stone-900 font-semibold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-lg transition-all duration-200 text-xl" style="font-family: 'Montserrat', 'Inter', 'Arial', sans-serif;" autofocus />
+                                <button type="submit" class="absolute left-6 top-1/2 transform -translate-y-1/2 text-yellow-400">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+                                    </svg>
+                                </button>
+                            </form>
                             <button @click="open = false" class="absolute right-6 top-1/2 -translate-y-1/2 md:top-1/2 md:-translate-y-1/2 -translate-y-[60%] md:-translate-y-1/2 text-slate-700 hover:text-yellow-400 text-2xl font-bold">
                                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

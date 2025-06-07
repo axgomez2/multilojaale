@@ -63,12 +63,8 @@ class NewCheckoutController extends Controller
                 ->with('error', 'Seu carrinho está vazio. Adicione produtos antes de prosseguir para o checkout.');
         }
         
-        // Verificar se há frete selecionado
+        // Verificar ou calcular opções de frete
         $selectedShipping = session('selected_shipping');
-        if (!$selectedShipping) {
-            return redirect()->route('site.cart.index')
-                ->with('error', 'É necessário selecionar uma opção de frete antes de prosseguir para o checkout.');
-        }
         
         // Recuperar endereços do usuário
         $addresses = collect([]);
@@ -81,6 +77,46 @@ class NewCheckoutController extends Controller
             if ($addresses->count() > 0) {
                 $selectedAddress = $addresses->firstWhere('is_default', true) ?? $addresses->first();
             }
+        }
+        
+        // Se não há frete selecionado mas o usuário tem endereço, tentar calcular
+        if (!$selectedShipping && $selectedAddress) {
+            try {
+                // Calcular frete usando o serviço MelhorEnvio para o endereço selecionado
+                $shippingOptions = $this->calculateShipping($selectedAddress->zipcode);
+                
+                if ($shippingOptions && isset($shippingOptions['options']) && !empty($shippingOptions['options'])) {
+                    // Salvar opções de frete na sessão
+                    $selectedShipping = $shippingOptions;
+                    session(['selected_shipping' => $selectedShipping]);
+                    
+                    // Atualizar o valor de frete no carrinho
+                    if (isset($selectedShipping['selected']) && isset($selectedShipping['selected']['price'])) {
+                        $cart->shipping_value = $selectedShipping['selected']['price'];
+                        $cart->save();
+                    }
+                    
+                    // Registrar cálculo de frete em log
+                    Log::info('Frete calculado automaticamente no checkout', [
+                        'user_id' => auth()->id(),
+                        'zipcode' => $selectedAddress->zipcode,
+                        'options_count' => count($shippingOptions['options']),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Registrar erro em log
+                Log::error('Erro ao calcular frete no checkout', [
+                    'user_id' => auth()->id(),
+                    'zipcode' => $selectedAddress->zipcode,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+        
+        // Se mesmo após tentar calcular ainda não há frete e o usuário não tem endereço, redirecionar
+        if (!$selectedShipping && $addresses->isEmpty()) {
+            return redirect()->route('site.cart.index')
+                ->with('error', 'É necessário cadastrar um endereço e selecionar uma opção de frete antes de prosseguir para o checkout.');
         }
         
         if (!$selectedAddress && $addresses->count() > 0) {
@@ -258,6 +294,90 @@ class NewCheckoutController extends Controller
             return redirect()->route('site.newcheckout.index')
                 ->with('error', 'Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.');
         }
+    }
+    
+    /**
+     * Atualizar a opção de frete selecionada no checkout
+     */
+    public function updateShipping(Request $request)
+    {
+        // Validar a requisição
+        $request->validate([
+            'shipping_option' => 'required|string'
+        ]);
+        
+        // Recuperar opções de frete da sessão
+        $selectedShipping = session('selected_shipping');
+        
+        // Verificar se os dados do frete existem e estão na estrutura correta
+        if (!$selectedShipping || !isset($selectedShipping['options']) || !is_array($selectedShipping['options']) || empty($selectedShipping['options'])) {
+            // Tentar recalcular o frete para o endereço atual
+            try {
+                // Obter endereço selecionado
+                $addresses = auth()->user()->addresses()->get();
+                $selectedAddress = $addresses->firstWhere('is_default', true) ?? $addresses->first();
+                
+                if ($selectedAddress) {
+                    // Calcular frete usando o serviço MelhorEnvio
+                    $shippingOptions = $this->calculateShipping($selectedAddress->zipcode);
+                    
+                    if ($shippingOptions && isset($shippingOptions['options']) && !empty($shippingOptions['options'])) {
+                        // Atualizar a sessão com as novas opções de frete
+                        $selectedShipping = $shippingOptions;
+                        session(['selected_shipping' => $selectedShipping]);
+                    } else {
+                        return redirect()->back()->with('error', 'Não foi possível calcular opções de frete para o endereço selecionado.');
+                    }
+                } else {
+                    return redirect()->back()->with('error', 'Não há endereços cadastrados.');
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao recalcular frete: ' . $e->getMessage(), [
+                    'user_id' => auth()->id(),
+                    'exception' => $e->getTraceAsString()
+                ]);
+                
+                return redirect()->back()->with('error', 'Não foi possível calcular opções de frete. Por favor, tente novamente.');
+            }
+        }
+        
+        // ID da nova opção selecionada
+        $shippingId = $request->input('shipping_option');
+        
+        // Procurar a opção selecionada na lista de opções disponíveis
+        $newOption = null;
+        foreach ($selectedShipping['options'] as $option) {
+            if ($option['id'] == $shippingId) {
+                $newOption = $option;
+                break;
+            }
+        }
+        
+        // Se encontrou a opção, atualiza a sessão
+        if ($newOption) {
+            // Atualizar a opção selecionada
+            $selectedShipping['selected'] = $newOption;
+            
+            // Atualizar na sessão
+            session(['selected_shipping' => $selectedShipping]);
+            
+            // Atualizar o carrinho com o novo valor de frete
+            $cart = $this->cartService->getCurrentCart();
+            $cart->shipping_value = $newOption['price'];
+            $cart->save();
+            
+            // Registrar a mudança em log
+            Log::info('Opção de frete atualizada no checkout', [
+                'user_id' => auth()->id(),
+                'shipping_id' => $shippingId,
+                'shipping_name' => $newOption['name'],
+                'shipping_price' => $newOption['price'],
+            ]);
+            
+            return redirect()->back()->with('success', 'Opção de frete atualizada com sucesso.');
+        }
+        
+        return redirect()->back()->with('error', 'Opção de frete inválida.');
     }
     
     /**

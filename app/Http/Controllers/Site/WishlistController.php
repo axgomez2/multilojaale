@@ -163,7 +163,7 @@ class WishlistController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'uuid|exists:vinyl_masters,id',
+            'ids.*' => 'exists:vinyl_masters,id',
         ]);
         
         $user = Auth::user();

@@ -12,7 +12,7 @@
             </button>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             @foreach($wishlistItems as $item)
                 <div class="bg-white rounded-lg shadow-md overflow-hidden relative">
                     <div class="absolute top-2 right-2 z-10">
@@ -29,11 +29,14 @@
                     
                     <div class="relative">
                         <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}">
-                            <img 
-                                src="{{ $item->vinylMaster->cover_image }}"
-                                alt="{{ $item->vinylMaster->title }}"
-                                class="w-full h-48 object-cover"
-                            >
+                            <div class="aspect-square overflow-hidden">
+                                <img 
+                                    src="{{ asset('storage/' . $item->vinylMaster->cover_image) }}"
+                                    alt="{{ $item->vinylMaster->title }}"
+                                    class="w-full h-full object-cover object-center"
+                                    onerror="this.src='{{ asset('assets/images/placeholder.jpg') }}'"
+                                >
+                            </div>
                             
                             <div class="p-4">
                                 <h3 class="text-lg font-semibold truncate">{{ $item->vinylMaster->title }}</h3>

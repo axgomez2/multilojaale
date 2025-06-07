@@ -8,6 +8,7 @@ use App\Http\Controllers\YouTubeController;
 // Rota pública principal (home)
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+
 // Rotas de verificação de email
 Route::get('/email/verify', function () {
     return view('auth.verify-email');
@@ -28,6 +29,9 @@ Route::get('/discos', [CategoryController::class, 'allProducts'])->name('site.pr
 
 // Rota para produtos por categoria
 Route::get('/categoria/{slug}', [CategoryController::class, 'show'])->name('site.category');
+
+// Rota para busca no site
+Route::get('/busca', [\App\Http\Controllers\Site\SearchController::class, 'search'])->name('site.search');
 
 // Rota para produtos por artista
 Route::get('/artista/{slug}', [CategoryController::class, 'byArtist'])->name('site.artist');
@@ -116,6 +120,9 @@ Route::post('/youtube/search', [YouTubeController::class, 'search'])->name('yout
 // API para o player de vinil - rota pública
 Route::get('/api/vinyl/{id}/tracks', [\App\Http\Controllers\Api\VinylTracksController::class, 'getTracks'])->name('api.vinyl.tracks');
 
+// API para atualização do CPF diretamente na página de checkout
+Route::post('/api/user/update-cpf', [\App\Http\Controllers\Api\UserController::class, 'updateCpf'])->middleware(['auth'])->name('api.user.update-cpf');
+
 // Rotas para Wishlist (Lista de Desejos) usando Livewire
 Route::prefix('wishlist')->name('site.wishlist.')->middleware(['auth', 'verified'])->group(function () {
     // Página principal - usando componente Livewire diretamente
@@ -144,6 +151,7 @@ require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/cart.php';
 require __DIR__.'/checkout.php';
+require __DIR__.'/debug.php'; // Rotas de debug para testes
 
 // IMPORTANTE: Rota para detalhes do disco de vinil - deve ser a ÚTIMA rota
 // por ser uma rota coringa que captura qualquer padrão /{param1}/{param2}

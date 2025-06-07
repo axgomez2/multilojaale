@@ -52,17 +52,59 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
         
-        $validator = Validator::make($request->all(), [
+        // Regras básicas de validação
+        $rules = [
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'cpf' => 'nullable|string|max:14',
             'birth_date' => 'nullable|date',
-        ]);
+        ];
+        
+        // Validar telefone com regra de unicidade, excetuando o usuário atual
+        if ($request->filled('phone')) {
+            $rules['phone'] = [
+                'string', 
+                'max:20',
+                function ($attribute, $value, $fail) use ($user) {
+                    $exists = \App\Models\User::where('phone', $value)
+                                              ->where('id', '!=', $user->id)
+                                              ->exists();
+                    if ($exists) {
+                        $fail('Este telefone já está sendo usado por outro usuário.');
+                    }
+                }
+            ];
+        }
+        
+        // Validar CPF com regra de unicidade, excetuando o usuário atual
+        if ($request->filled('cpf')) {
+            $rules['cpf'] = [
+                'string', 
+                'max:14',
+                function ($attribute, $value, $fail) use ($user) {
+                    // Remove formatação para comparar
+                    $cleanCpf = preg_replace('/[^0-9]/', '', $value);
+                    
+                    // Verifica se outro usuário já usa este CPF
+                    $exists = \App\Models\User::where(function($query) use ($value, $cleanCpf) {
+                                        $query->where('cpf', $value)
+                                              ->orWhere('cpf', $cleanCpf);
+                                    })
+                                    ->where('id', '!=', $user->id)
+                                    ->exists();
+                    
+                    if ($exists) {
+                        $fail('Este CPF já está sendo usado por outro usuário.');
+                    }
+                }
+            ];
+        }
+        
+        $validator = Validator::make($request->all(), $rules);
         
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
         
+        // Se passou pela validação, atualiza os dados
         $user->update($validator->validated());
         
         return redirect()->route('site.profile.index')

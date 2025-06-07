@@ -342,35 +342,189 @@
                 </button>
               </div>
 
-              <div class="mt-4 flex flex-wrap gap-4">
+              <div class="mt-4 flex flex-wrap gap-4" x-data="{
+                showNotification: false,
+                message: '',
+                notificationType: 'success',
+                toggleNotification(msg, type = 'success') {
+                    this.message = msg;
+                    this.notificationType = type;
+                    this.showNotification = true;
+                    setTimeout(() => {
+                        this.showNotification = false;
+                    }, 3000);
+                },
+                addToCart(vinylId) {
+                    console.log('Adicionando ao carrinho:', vinylId);
+                    
+                    // Criar um FormData para compatibilidade com Laravel
+                    const formData = new FormData();
+                    formData.append('vinyl_master_id', vinylId);
+                    formData.append('quantity', 1);
+                    
+                    fetch('/debug/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content,
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.toggleNotification(data.message || 'Produto adicionado ao carrinho!', 'success');
+                            if (data.cartCount) {
+                                document.querySelectorAll('.cart-count').forEach(el => {
+                                    el.textContent = data.cartCount;
+                                });
+                            }
+                        } else {
+                            this.toggleNotification(data.message || 'Erro ao adicionar ao carrinho', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.toggleNotification('Erro ao processar solicitação', 'error');
+                    });
+                },
+                toggleWishlist(id, element) {
+                    if (!window.isAuthenticated) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    
+                    fetch(`/wishlist/toggle/${id}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.toggleNotification(data.message || 'Lista de desejos atualizada!', 'success');
+                            
+                            // Atualizar ícone
+                            const icon = element.querySelector('i');
+                            if (data.inWishlist) {
+                                icon.classList.add('text-red-500');
+                            } else {
+                                icon.classList.remove('text-red-500');
+                            }
+                        } else {
+                            this.toggleNotification(data.message || 'Erro ao atualizar lista de desejos', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.toggleNotification('Erro ao processar solicitação', 'error');
+                    });
+                },
+                toggleWantlist(id, element) {
+                    if (!window.isAuthenticated) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    
+                    fetch(`/wantlist/toggle/${id}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.toggleNotification(data.message || 'Lista de interesse atualizada!', 'success');
+                            
+                            // Atualizar ícone
+                            const icon = element.querySelector('i');
+                            if (data.inWantlist) {
+                                icon.classList.add('text-purple-500');
+                            } else {
+                                icon.classList.remove('text-purple-500');
+                            }
+                        } else {
+                            this.toggleNotification(data.message || 'Erro ao atualizar lista de interesse', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.toggleNotification('Erro ao processar solicitação', 'error');
+                    });
+                }
+              }">
                 @if($vinyl->vinylSec->in_stock && $vinyl->vinylSec->stock > 0)
                   <button type="button"
                     class="wishlist-button px-4 py-3 w-[45%] cursor-pointer border border-gray-300 bg-white hover:bg-slate-50 text-slate-900 text-sm font-medium"
-                    data-product-id="{{ $vinyl->id }}"
-                    data-product-type="{{ get_class($vinyl) }}"
-                    data-is-available="{{ json_encode($vinyl->vinylSec->quantity > 0) }}"
-                    data-in-wishlist="{{ json_encode(auth()->check() && $vinyl->inWishlist()) }}">
+                    @click="toggleWishlist('{{ $vinyl->id }}', $event.currentTarget)">
                     <i class="fas fa-heart {{ auth()->check() && $vinyl->inWishlist() ? 'text-red-500' : '' }}"></i>
                     Adicionar aos favoritos
                   </button>
                   <button type="button"
                     class="add-to-cart-button px-4 py-3 w-[45%] cursor-pointer border border-purple-600 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium"
-                    data-product-id="{{ $vinyl->product ? $vinyl->product->id : $vinyl->id }}"
-                    data-quantity="1">
+                    @click="addToCart('{{ $vinyl->id }}')">
                     <i class="fas fa-shopping-cart mr-2"></i>
                     Adicionar ao carrinho
                   </button>
                 @else
                   <button type="button"
                     class="px-4 py-3 w-[45%] cursor-pointer border border-gray-300 bg-white hover:bg-slate-50 text-slate-900 text-sm font-medium"
-                    onclick="addToWantlist({{ $vinyl->id }})">
+                    @click="toggleWantlist('{{ $vinyl->id }}', $event.currentTarget)">
+                    <i class="fas fa-bell {{ auth()->check() && $vinyl->inWantlist() ? 'text-purple-500' : '' }}"></i>
                     Adicionar à wantlist
                   </button>
                   <button type="button"
-                    class="px-4 py-3 w-[45%] cursor-pointer border border-purple-600 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium">
+                    class="px-4 py-3 w-[45%] cursor-pointer border border-purple-600 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium"
+                    disabled>
+                    <i class="fas fa-envelope-open mr-2"></i>
                     Avisar quando disponível
                   </button>
                 @endif
+                
+                <!-- Notificação simples integrada ao componente -->
+                <div
+                    x-show="showNotification"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform scale-90"
+                    x-transition:enter-end="opacity-100 transform scale-100"
+                    x-transition:leave="transition ease-in duration-300"
+                    x-transition:leave-start="opacity-100 transform scale-100"
+                    x-transition:leave-end="opacity-0 transform scale-90"
+                    class="fixed top-5 right-5 z-50 max-w-sm shadow-lg rounded-lg overflow-hidden"
+                    :class="{
+                        'bg-green-500': notificationType === 'success',
+                        'bg-red-500': notificationType === 'error',
+                        'bg-yellow-500': notificationType === 'warning',
+                        'bg-blue-500': notificationType === 'info'
+                    }"
+                >
+                    <div class="px-4 py-3 text-white flex items-center">
+                        <!-- Ícone baseado no tipo -->
+                        <template x-if="notificationType === 'success'">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </template>
+                        <template x-if="notificationType === 'error'">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                        </template>
+                        <template x-if="notificationType === 'warning'">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </template>
+                        <template x-if="notificationType === 'info'">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </template>
+                        <span x-text="message"></span>
+                    </div>
+                </div>
               </div>
             </div>
 
@@ -437,7 +591,7 @@
             <div class="mt-12">
                 <h2 class="text-2xl font-bold text-black mb-6">Você também pode gostar</h2>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     @foreach($similarVinyls->take(6) as $similar)
                         <x-site.vinyl-card :vinyl="$similar" size="normal"
                             :inWishlist="in_array($similar->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"

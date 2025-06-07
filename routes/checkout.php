@@ -13,6 +13,9 @@ Route::middleware(['web'])->group(function () {
     
     Route::get('/checkout/confirmation/{orderId}', [CheckoutController::class, 'confirmation'])->name('site.checkout.confirmation');
     
+    // Atualização de frete no checkout simplificado
+    Route::post('/checkout/atualizar-frete', [NewCheckoutController::class, 'updateShipping'])->name('site.checkout.update-shipping');
+    
     // Endereços no Checkout
     
     Route::post('/checkout/addresses', [CheckoutAddressController::class, 'store'])->name('site.checkout.addresses.store');

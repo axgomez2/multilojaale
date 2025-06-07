@@ -165,8 +165,8 @@
         "@context": "https://schema.org",
         "@type": "Product",
         "name": "{{ $vinyl->title }}",
-        "image": "{{ $image }}",
-        "description": "{{ $description }}",
+        "image": "{{ isset($image) ? $image : (isset($vinyl->cover_image) ? asset('storage/' . $vinyl->cover_image) : asset('assets/images/placeholder.jpg')) }}",
+        "description": "{{ isset($description) ? $description : (isset($vinyl->description) ? $vinyl->description : $vinyl->title) }}",
         @if($vinyl->artists && $vinyl->artists->count() > 0)
         "brand": {
             "@type": "Brand",
@@ -290,8 +290,8 @@
     @livewireStyles
 </head>
     <body class="font-sans bg-gray-100 antialiased {{ auth()->check() ? 'user-authenticated' : '' }}">
-        <!-- Flash Messages/Toasts -->
-        <x-site.flash-messages />
+       
+ 
         
         <div class="min-h-screen">
             <!-- Navbar -->
@@ -314,12 +314,12 @@
         
         <script>
             // Listener para eventos de notificação do Livewire
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('livewire:init', function() {
                 // Escutar eventos de notificação do Livewire
-                window.addEventListener('notify', event => {
+                Livewire.on('notify', (event) => {
                     // Criar dinamicamente um toast usando o componente Flowbite
-                    const type = event.detail.type || 'success';
-                    const message = event.detail.message;
+                    const type = event.type || 'success';
+                    const message = event.message;
                     
                     // Criar o elemento toast
                     const toastId = `toast-${Date.now()}`;

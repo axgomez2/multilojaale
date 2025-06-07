@@ -6,11 +6,17 @@
             <div class="flex items-center">
                 <!-- Logo -->
                 <a href="{{ route('home') }}" class="flex-shrink-0 flex items-center">
-                    @if(isset($store) && $store->logo_path)
-                        <img class="h-8 w-auto" src="{{ asset('storage/' . $store->logo_path) }}" alt="{{ $store->name }}">
-                    @else
-                        <span class="text-lg font-bold">{{ isset($store) ? $store->name : 'Loja Online' }}</span>
-                    @endif
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100">
+  <rect width="300" height="100" fill="#000"/>
+  <!-- Disco de vinil -->
+  <circle cx="50" cy="50" r="40" fill="#111"/>
+  <circle cx="50" cy="50" r="12" fill="#fff"/>
+  <circle cx="50" cy="50" r="40" fill="none" stroke="#ffcc00" stroke-width="2"/>
+
+  <!-- Texto -->
+  <text x="100" y="45" font-family="Arial Black, sans-serif" font-size="32" fill="#fff">RDV</text>
+  <text x="100" y="80" font-family="Arial, sans-serif" font-size="20" fill="#ccc">DISCOS</text>
+</svg>
                 </a>
             </div>
             

@@ -2,90 +2,166 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
-use Illuminate\Support\Facades\Auth;
+use App\Models\CartItem;
 use App\Models\Wishlist;
 use App\Models\VinylMaster;
+use Livewire\Component;
 
 class WishlistPage extends Component
 {
     public $wishlistItems = [];
-    
-    protected $listeners = [
-        'wishlistUpdated' => 'refreshWishlist',
-        'removeFromWishlist' => 'removeItem',
-        'addAllToCart' => 'addAllToCart'
-    ];
-    
+    protected $listeners = ['refreshWishlist' => '$refresh', 'addToCart' => 'addItemToCart'];
+
     public function mount()
     {
-        $this->refreshWishlist();
+        $this->loadWishlistItems();
     }
-    
-    /**
-     * Atualiza a lista de itens da wishlist
-     */
-    public function refreshWishlist()
+
+    public function loadWishlistItems()
     {
-        if (Auth::check()) {
-            $this->wishlistItems = Auth::user()->wishlist()
-                                    ->with('vinylMaster.artists')
-                                    ->get();
+        if (auth()->check()) {
+            $this->wishlistItems = Wishlist::where('user_id', auth()->id())
+                ->with(['vinylMaster.vinylSec', 'vinylMaster.artists'])
+                ->get();
         }
     }
-    
-    /**
-     * Remove um item da wishlist
-     */
+
     public function removeItem($vinylMasterId)
     {
-        if (!Auth::check()) {
-            return;
+        if (auth()->check()) {
+            Wishlist::where('user_id', auth()->id())
+                ->where('vinyl_master_id', $vinylMasterId)
+                ->delete();
+                
+            $this->loadWishlistItems();
+            $this->emit('wishlistUpdated');
+            
+            $this->dispatchBrowserEvent('notify', [
+                'type' => 'success', 
+                'message' => 'Item removido da lista de desejos'
+            ]);
         }
-        
-        $userId = Auth::id();
-        
-        Wishlist::where('user_id', $userId)
-               ->where('vinyl_master_id', $vinylMasterId)
-               ->delete();
-               
-        $this->refreshWishlist();
-        
-        $this->dispatchBrowserEvent('notify', [
-            'message' => 'Item removido da lista de desejos',
-            'type' => 'success'
-        ]);
     }
     
-    /**
-     * Adiciona todos os itens da wishlist ao carrinho
-     */
-    public function addAllToCart()
+    public function addItemToCart($vinylMasterId)
     {
-        if (!Auth::check() || count($this->wishlistItems) == 0) {
+        if (!auth()->check()) {
+            $this->dispatchBrowserEvent('notify', [
+                'type' => 'error', 
+                'message' => 'Você precisa estar logado para adicionar itens ao carrinho'
+            ]);
             return;
         }
         
-        // Aqui você pode integrar com o carrinho de compras
-        // Assumindo que existe um CartController com um método addToCart
+        $vinylMaster = VinylMaster::with('vinylSec')->find($vinylMasterId);
+        
+        if (!$vinylMaster || !$vinylMaster->isAvailable()) {
+            $this->dispatchBrowserEvent('notify', [
+                'type' => 'error', 
+                'message' => 'Este vinil não está disponível para compra no momento'
+            ]);
+            return;
+        }
+        
+        $userId = auth()->id();
+        
+        // Verificar se o item já está no carrinho
+        $existingItem = CartItem::where('user_id', $userId)
+                             ->where('vinyl_master_id', $vinylMasterId)
+                             ->first();
+        
+        if ($existingItem) {
+            // Atualizar a quantidade (limitado ao estoque disponível)
+            $newQuantity = min($existingItem->quantity + 1, $vinylMaster->vinylSec->stock);
+            
+            $existingItem->update([
+                'quantity' => $newQuantity
+            ]);
+            
+            $message = 'Quantidade atualizada no carrinho';
+        } else {
+            // Adicionar novo item ao carrinho
+            CartItem::create([
+                'user_id' => $userId,
+                'vinyl_master_id' => $vinylMasterId,
+                'quantity' => 1
+            ]);
+            
+            $message = 'Item adicionado ao carrinho';
+        }
+        
+        $this->dispatchBrowserEvent('notify', [
+            'type' => 'success', 
+            'message' => $message
+        ]);
+        
+        $this->emit('cartUpdated');
+    }
+    
+    public function addAllToCart()
+    {
+        if (!auth()->check()) {
+            $this->dispatchBrowserEvent('notify', [
+                'type' => 'error', 
+                'message' => 'Você precisa estar logado para adicionar itens ao carrinho'
+            ]);
+            return;
+        }
+        
         $addedCount = 0;
+        $notAvailableCount = 0;
         
         foreach ($this->wishlistItems as $item) {
-            $vinyl = VinylMaster::find($item->vinyl_master_id);
-            
-            if ($vinyl && $vinyl->isAvailable()) {
-                // Chamar o método para adicionar ao carrinho
-                // app('App\Http\Controllers\Site\CartController')->addToCart($item->vinyl_master_id);
+            if ($item->vinylMaster && $item->vinylMaster->isAvailable()) {
+                // Verificar se o item já está no carrinho
+                $existingItem = CartItem::where('user_id', auth()->id())
+                                     ->where('vinyl_master_id', $item->vinyl_master_id)
+                                     ->first();
+                
+                if ($existingItem) {
+                    // Atualizar a quantidade (limitado ao estoque disponível)
+                    $newQuantity = min($existingItem->quantity + 1, $item->vinylMaster->vinylSec->stock);
+                    
+                    $existingItem->update([
+                        'quantity' => $newQuantity
+                    ]);
+                } else {
+                    // Adicionar novo item ao carrinho
+                    CartItem::create([
+                        'user_id' => auth()->id(),
+                        'vinyl_master_id' => $item->vinyl_master_id,
+                        'quantity' => 1
+                    ]);
+                }
+                
                 $addedCount++;
+            } else {
+                $notAvailableCount++;
             }
         }
         
+        $message = '';
+        
+        if ($addedCount > 0) {
+            $message = $addedCount . ' ' . ($addedCount == 1 ? 'item adicionado' : 'itens adicionados') . ' ao carrinho';
+        }
+        
+        if ($notAvailableCount > 0) {
+            $message .= ($addedCount > 0 ? '. ' : '') . $notAvailableCount . ' ' . ($notAvailableCount == 1 ? 'item não estava disponível' : 'itens não estavam disponíveis');
+        }
+        
+        if ($addedCount == 0 && $notAvailableCount == 0) {
+            $message = 'Nenhum item para adicionar ao carrinho';
+        }
+        
         $this->dispatchBrowserEvent('notify', [
-            'message' => "{$addedCount} itens adicionados ao carrinho",
-            'type' => 'success'
+            'type' => $addedCount > 0 ? 'success' : 'warning', 
+            'message' => $message
         ]);
+        
+        $this->emit('cartUpdated');
     }
-    
+
     public function render()
     {
         return view('livewire.wishlist-page');
