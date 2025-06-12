@@ -14,12 +14,15 @@ class Payment extends Model
     
     protected $fillable = [
         'order_id',
-        'gateway',
+        'gateway_id',
+        'gateway_code',
         'method',
         'status',
         'transaction_id',
+        'payment_method_id',
         'amount',
         'gateway_data',
+        'paid_at',
     ];
     
     protected $casts = [

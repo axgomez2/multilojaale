@@ -72,27 +72,61 @@ class SimpleCartController extends Controller
             ['session_id' => Session::getId()]
         );
         
-        // Verificar se o item já existe no carrinho
-        $cartItem = CartItem::where('user_id', $user->id)
+        // Verificar se o item já existe no carrinho (independente de estar salvo para depois ou não)
+        $existingCartItem = CartItem::where('user_id', $user->id)
                         ->where('vinyl_master_id', $validatedData['vinyl_master_id'])
-                        ->where('saved_for_later', false)
                         ->first();
         
-        if ($cartItem) {
-            // Item já existe, atualizar apenas a quantidade
-            $newQuantity = $cartItem->quantity + $validatedData['quantity'];
-            
-            // Validar novamente estoque com quantidade total
-            if ($newQuantity > $vinylMaster->vinylSec->stock) {
+        if ($existingCartItem) {
+            // Item já existe no carrinho
+            if ($existingCartItem->saved_for_later) {
+                // Item está salvo para depois, mover para o carrinho ativo
+                $existingCartItem->saved_for_later = false;
+                $existingCartItem->cart_id = $cart->id;
+                
+                // Validar estoque
+                if ($validatedData['quantity'] > $vinylMaster->vinylSec->stock) {
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'Quantidade solicitada excede o estoque disponível.'
+                    ]);
+                }
+                
+                $existingCartItem->quantity = $validatedData['quantity'];
+                $existingCartItem->save();
+                
                 return response()->json([
-                    'success' => false, 
-                    'message' => 'Quantidade total excede o estoque disponível.'
+                    'success' => true,
+                    'message' => 'Item movido de "Salvo para depois" para o carrinho!',
+                    'cartCount' => CartItem::where('user_id', $user->id)->where('saved_for_later', false)->count()
+                ]);
+            } else {
+                // Item já está no carrinho ativo, atualizar apenas a quantidade
+                $newQuantity = $existingCartItem->quantity + $validatedData['quantity'];
+                
+                // Validar novamente estoque com quantidade total
+                if ($newQuantity > $vinylMaster->vinylSec->stock) {
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'Quantidade total excede o estoque disponível.'
+                    ]);
+                }
+                
+                $existingCartItem->quantity = $newQuantity;
+                $existingCartItem->cart_id = $cart->id;
+                $existingCartItem->save();
+                
+                // Contar itens no carrinho para atualização do contador na UI
+                $cartCount = CartItem::where('user_id', $user->id)
+                               ->where('saved_for_later', false)
+                               ->count();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Quantidade atualizada no carrinho!',
+                    'cartCount' => $cartCount
                 ]);
             }
-            
-            $cartItem->quantity = $newQuantity;
-            $cartItem->cart_id = $cart->id;
-            $cartItem->save();
         } else {
             // Criar um novo item no carrinho
             $cartItem = new CartItem();
@@ -102,17 +136,17 @@ class SimpleCartController extends Controller
             $cartItem->saved_for_later = false;
             $cartItem->vinyl_master_id = $validatedData['vinyl_master_id'];
             $cartItem->save();
-        }
-        
-        // Contar itens no carrinho para atualização do contador na UI
-        $cartCount = CartItem::where('user_id', $user->id)
+            
+            // Contar itens no carrinho para atualização do contador na UI
+            $cartCount = CartItem::where('user_id', $user->id)
                            ->where('saved_for_later', false)
                            ->count();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Item adicionado ao carrinho!',
-            'cartCount' => $cartCount
-        ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Item adicionado ao carrinho!',
+                'cartCount' => $cartCount
+            ]);
+        }
     }
 }

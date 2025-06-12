@@ -53,6 +53,26 @@ class CartService
     }
     
     /**
+     * Obter apenas os itens ativos do carrinho (não salvos para depois).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getActiveItems()
+    {
+        $cart = $this->getCurrentCart();
+        
+        if (!$cart) {
+            return collect([]);
+        }
+        
+        // Retornar apenas os itens que não estão salvos para depois
+        return CartItem::where('cart_id', $cart->id)
+            ->where('saved_for_later', false)
+            ->with(['product.productable', 'vinylMaster.vinylSec', 'vinylMaster.artists'])
+            ->get();
+    }
+    
+    /**
      * Adicionar um produto ao carrinho.
      *
      * @param string $vinylId

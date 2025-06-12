@@ -26,12 +26,6 @@
                     <input type="text" name="recipient_name" id="recipient_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50" placeholder="Nome completo da pessoa que vai receber" required>
                 </div>
                 
-                <!-- Telefone -->
-                <div>
-                    <label for="recipient_phone" class="block text-sm font-medium text-gray-700">Telefone</label>
-                    <input type="text" name="recipient_phone" id="recipient_phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50" placeholder="(00) 00000-0000" required>
-                </div>
-                
                 <!-- CEP -->
                 <div>
                     <label for="address_zipcode" class="block text-sm font-medium text-gray-700">CEP</label>
@@ -110,8 +104,9 @@
                 <input type="hidden" name="type" value="shipping">
                 <input type="hidden" name="is_default_shipping" value="1">
                 <input type="hidden" name="is_default_billing" value="0">
-                <input type="hidden" name="recipient_document" value="">
-                <input type="hidden" name="recipient_email" value="">
+                <input type="hidden" name="recipient_document" value="{{ auth()->user()->cpf }}">
+                <input type="hidden" name="recipient_phone" value="{{ auth()->user()->phone }}">
+                <input type="hidden" name="recipient_email" value="{{ auth()->user()->email }}">
                 
                 <div class="flex space-x-4 mt-6">
                     <button type="button" onclick="document.getElementById('address-modal').classList.add('hidden')" class="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
@@ -132,10 +127,62 @@
         document.getElementById('address-modal').classList.remove('hidden');
     }
     
-    // Aplicar máscara ao campo de CEP
+    // Função para buscar endereço pelo CEP usando a API ViaCEP
+    function buscarEnderecoPorCep(cep) {
+        // Remover qualquer caractere não numérico
+        cep = cep.replace(/\D/g, '');
+        
+        // Verificar se o CEP tem 8 dígitos
+        if (cep.length !== 8) {
+            return;
+        }
+        
+        // Mostrar indicador de carregamento
+        document.getElementById('address_street').value = 'Carregando...';
+        document.getElementById('address_district').value = 'Carregando...';
+        document.getElementById('address_city').value = 'Carregando...';
+        
+        // Fazer a requisição para a API ViaCEP
+        fetch(`https://viacep.com.br/ws/${cep}/json/`)
+            .then(response => response.json())
+            .then(data => {
+                // Verificar se o CEP existe e não retornou erro
+                if (!data.erro) {
+                    document.getElementById('address_street').value = data.logradouro || '';
+                    document.getElementById('address_district').value = data.bairro || '';
+                    document.getElementById('address_city').value = data.localidade || '';
+                    document.getElementById('address_state').value = data.uf || '';
+                    
+                    // Focar no campo de número se a rua for encontrada
+                    if (data.logradouro) {
+                        document.getElementById('address_number').focus();
+                    }
+                } else {
+                    // Limpar os campos caso ocorra erro
+                    limparCamposEndereco();
+                    alert('CEP não encontrado');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar CEP:', error);
+                limparCamposEndereco();
+                alert('Erro ao buscar CEP. Verifique sua conexão ou tente novamente mais tarde.');
+            });
+    }
+    
+    // Função para limpar os campos de endereço
+    function limparCamposEndereco() {
+        document.getElementById('address_street').value = '';
+        document.getElementById('address_district').value = '';
+        document.getElementById('address_city').value = '';
+        document.getElementById('address_state').value = '';
+    }
+    
+    // Aplicar máscara ao campo de CEP, configuração da busca automática e validação do formulário
     document.addEventListener('DOMContentLoaded', function() {
         const zipcodeInput = document.getElementById('address_zipcode');
         
+        // Aplicar máscara ao digitar o CEP
         zipcodeInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
@@ -144,6 +191,19 @@
             }
             
             e.target.value = value;
+            
+            // Se o CEP estiver completo (00000-000), busca o endereço
+            if (value.length === 9) {
+                buscarEnderecoPorCep(value);
+            }
+        });
+        
+        // Também adiciona evento para quando o campo perder o foco
+        zipcodeInput.addEventListener('blur', function() {
+            const cep = zipcodeInput.value.replace(/\D/g, '');
+            if (cep.length === 8) {
+                buscarEnderecoPorCep(cep);
+            }
         });
         
         // Validar e enviar o formulário via AJAX

@@ -53,6 +53,17 @@
     </div>
 </section>
 
+
+<div class="pt-8 pb-8">
+            <div class=" max-w-7xl mx-auto ">
+                <div class="">
+                    <x-vinyl-carousel :vinyls="$slideVinyls" />
+                </div>
+
+            </div>
+        </div>
+
+
 <!-- Seção de produtos em destaque -->
 <section class="py-12 bg-gray-50">
      
@@ -60,13 +71,13 @@
 
 
 
-<div class="px-4 sm:px-6 lg:px-8 py-8">
+<div class="px-4 sm:px-6 lg:px-4 py-2">
     <!-- Discos em Destaque -->
-    <h2 class="text-2xl font-semibold text-slate-800 my-8 text-left subpixel-antialiased">Discos em Destaque</h2>
+    <h2 class="text-2xl font-semibold text-slate-800 my-4 text-left subpixel-antialiased">Discos em Destaque</h2>
        
     @if($featuredVinyls->isNotEmpty())
         <!-- Grade de produtos usando o componente vinyl-card -->
-        <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
+        <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
             @foreach($featuredVinyls as $vinyl)
                 <x-site.vinyl-card :vinyl="$vinyl" size="normal"
                     :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
@@ -97,7 +108,7 @@
     
     @if($latestVinyls->isNotEmpty())
         <!-- Grade de produtos usando o componente vinyl-card -->
-        <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
+        <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
             @foreach($latestVinyls->take(20) as $vinyl)
                 <x-site.vinyl-card :vinyl="$vinyl" size="normal"
                     :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
@@ -119,13 +130,15 @@
             <p class="text-white subpixel-antialiased text-lg">Novos discos serão adicionados em breve!</p>
         </div>
     @endif
+
+   
     
     <!-- Categorias principais -->
     @foreach($categories as $categoryData)
         @if($categoryData['vinyls']->count() >= 3)
             <h2 class="text-2xl font-semibold text-slate-800 my-8 text-left subpixel-antialiased">{{ $categoryData['category']->nome }}</h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
+            <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-6 mb-10">
                 @foreach($categoryData['vinyls']->take(10) as $vinyl)
                     <x-site.vinyl-card :vinyl="$vinyl" size="normal"
                         :inWishlist="in_array($vinyl->id, is_array($wishlistItems) ? $wishlistItems : ($wishlistItems ? $wishlistItems->toArray() : []))"
@@ -146,6 +159,30 @@
         @endif
     @endforeach
 </div>
+
+    <!-- Principais Gravadoras -->
+    <h2 class="text-2xl font-semibold text-slate-800 my-8 text-left subpixel-antialiased">Principais Gravadoras</h2>
+    
+    <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 lg:grid-cols-8 gap-4 mb-10">
+        @forelse($topLabels as $label)
+            <a href="{{ route('site.label', $label->slug) }}" class="block">
+                <div class="p-4 bg-white rounded-lg shadow-sm flex flex-col items-center justify-center gap-2 h-36 hover:shadow-md transition-all">
+                    @if($label->logo_url)
+                        <img src="{{ $label->logo_url }}" alt="{{ $label->name }}" class="h-12 w-auto object-contain">
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                    @endif
+                    <h6 class="font-semibold text-sm text-center truncate w-full">{{ $label->name }}</h6>
+                </div>
+            </a>
+        @empty
+            <div class="col-span-full p-4 bg-gray-100 rounded-lg text-center">
+                <p>Nenhuma gravadora encontrada</p>
+            </div>
+        @endforelse
+    </div>
 </section>
     entenda a classificação de discos usados e sua importância:
     <section class="bg-black text-white p-6">

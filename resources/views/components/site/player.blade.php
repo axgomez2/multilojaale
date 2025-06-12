@@ -1,4 +1,4 @@
-<div id="vinyl-player" x-data="vinylPlayer" x-bind:class="{'translate-y-0': isOpen, 'translate-y-full': !isOpen}" class="fixed bottom-0 left-0 z-50 w-full h-20 bg-stone-800 border-t border-gray-200 shadow-lg transition-transform duration-300 ease-in-out transform">
+<div id="vinyl-player" x-data="vinylPlayer" x-bind:class="{'translate-y-0': isOpen, 'translate-y-full': !isOpen, 'hidden': !isOpen}" class="fixed bottom-0 left-0 z-50 w-full h-20 bg-stone-800 border-t border-gray-200 shadow-lg transition-transform duration-300 ease-in-out transform hidden">
     <!-- Container invisível para o player do YouTube -->
     <div id="youtube-player-container" class="hidden"></div>
     <div class=" max-w-6xl mx-auto grid w-full grid-cols-1 px-4 py-3 md:grid-cols-3 md:py-4">

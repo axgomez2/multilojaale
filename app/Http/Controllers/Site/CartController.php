@@ -7,22 +7,24 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\VinylMaster;
-use App\Services\MelhorEnvio;
+use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 class CartController extends Controller
 {
     /**
+     * Serviço que gerencia as operações do carrinho
      * @var \App\Services\CartService
      */
     protected $cartService;
     
     /**
-     * Construtor do controlador.
+     * Construtor do controlador
      */
-    public function __construct(\App\Services\CartService $cartService)
+    public function __construct(CartService $cartService)
     {
         // Removido temporariamente o middleware 'verified' para permitir testes
         // TODO: Restaurar o middleware 'verified' após os testes
@@ -70,61 +72,49 @@ class CartController extends Controller
                           ])
                           ->where('saved_for_later', false)
                           ->get();
+                          
+        // Verificar o estoque de cada item e marcar os que não têm estoque suficiente
+        foreach ($cartItems as $item) {
+            $item->has_stock = $item->hasEnoughStock();
+            
+            // Registrar no log os itens sem estoque
+            if (!$item->has_stock) {
+                \Illuminate\Support\Facades\Log::info('Item do carrinho sem estoque suficiente', [
+                    'cart_item_id' => $item->id,
+                    'user_id' => $user->id,
+                    'product_id' => $item->product_id,
+                    'vinyl_master_id' => $item->vinyl_master_id,
+                    'quantity' => $item->quantity
+                ]);
+            }
+        }
+        
+        // Separar itens com e sem estoque
+        $itemsWithStock = $cartItems->filter(function($item) {
+            return $item->has_stock;
+        });
+        
+        $itemsWithoutStock = $cartItems->filter(function($item) {
+            return !$item->has_stock;
+        });
         
         $savedItems = $user->cartItems()
                            ->with('vinylMaster.vinylSec', 'vinylMaster.artists')
                            ->where('saved_for_later', true)
                            ->get();
         
-        // Calcular o total do carrinho (apenas itens ativos)
-        $cartTotal = $cartItems->sum(function($item) {
+        // Calcular o total do carrinho (apenas itens com estoque)
+        $cartTotal = $itemsWithStock->sum(function($item) {
             return $item->subtotal;
         });
         
-        // Verificar se há um CEP e opções de frete na sessão
-        $zipCode = Session::get('shipping_zip_code');
+        // Calcular o total dos itens sem estoque (para exibição separada)
+        $outOfStockTotal = $itemsWithoutStock->sum(function($item) {
+            return $item->subtotal;
+        });
         
-        // Se não há CEP na sessão, tentar usar o endereço padrão de entrega do usuário
-        if (!$zipCode) {
-            $defaultAddress = $user->addresses()
-                ->where('is_default_shipping', true)
-                ->first();
-                
-            if ($defaultAddress) {
-                $zipCode = preg_replace('/\D/', '', $defaultAddress->zipcode);
-                
-                // Se temos o endereço padrão, calcular o frete automaticamente?
-                // Vamos apenas armazenar o CEP na sessão para pré-preencher o campo
-                Session::put('shipping_zip_code', $zipCode);
-            }
-        }
-        
-        $shippingOptions = Session::get('shipping_options');
-        $selectedShipping = Session::get('selected_shipping');
-        
-        // Garantir que $selectedShipping tenha todas as chaves necessárias
-        if ($selectedShipping) {
-            // Aplicar valores padrão para chaves que possam estar faltando
-            $defaults = [
-                'id' => '',
-                'name' => 'Frete selecionado',
-                'price' => 0,
-                'delivery_time' => 5,
-                'delivery_estimate' => 'Prazo a calcular',
-                'company_id' => 0,
-                'company_name' => '',
-            ];
-            
-            // Combinamos os valores padrão com os valores existentes em $selectedShipping
-            foreach ($defaults as $key => $value) {
-                if (!isset($selectedShipping[$key])) {
-                    $selectedShipping[$key] = $value;
-                }
-            }
-            
-            // Atualizar na sessão
-            Session::put('selected_shipping', $selectedShipping);
-        }
+        // Remover qualquer informação de frete da sessão
+        Session::forget(['shipping_options', 'selected_shipping', 'shipping_calculation']);
         
         // Obter produtos recomendados (até 3 produtos populares que não estão no carrinho)
         $recommendedVinyls = [];
@@ -151,110 +141,15 @@ class CartController extends Controller
         // Obter itens da wishlist do usuário
         $wishlistItems = $user->wishlist()->pluck('vinyl_master_id')->toArray();
         
-        // Obter o valor do desconto (se houver)
+        // Obter o valor do desconto
         $discount = $cart ? $cart->discount : 0;
-        
-        // Verificar se há mensagem de cálculo de frete na sessão
-        $shippingCalculation = Session::get('shipping_calculation');
-        
-        // Se a página está sendo carregada após o cálculo de frete, mas não há opções disponíveis
-        // vamos verificar o motivo
-        if (Session::has('shipping_calculation') && empty($shippingOptions)) {
-            // Se for um cálculo bem-sucedido mas sem opções, isso é estranho
-            if (Session::get('shipping_calculation.success')) {
-                // Forçar a recuperação das opções da sessão novamente
-                $shippingOptions = Session::get('shipping_options', []);
-            }
-        }
-        
-        // Se o usuário tiver um endereço padrão, vamos recuperá-lo para preencher o CEP
-        $defaultAddress = $user->addresses()
-            ->where('is_default_shipping', true)
-            ->first();
-            
-        if ($defaultAddress) {
-            $zipCode = preg_replace('/\D/', '', $defaultAddress->zipcode);
-            
-            // Se temos o endereço padrão, calcular o frete automaticamente?
-            // Vamos apenas armazenar o CEP na sessão para pré-preencher o campo
-            Session::put('shipping_zip_code', $zipCode);
-        }
-        
-        $shippingOptions = Session::get('shipping_options');
-        $selectedShipping = Session::get('selected_shipping');
-        
-        // Garantir que $selectedShipping tenha todas as chaves necessárias
-        if ($selectedShipping) {
-            // Aplicar valores padrão para chaves que possam estar faltando
-            $defaults = [
-                'id' => '',
-                'name' => 'Frete selecionado',
-                'price' => 0,
-                'delivery_time' => 5,
-                'delivery_estimate' => 'Prazo a calcular',
-                'company_id' => 0,
-                'company_name' => '',
-            ];
-            
-            // Combinamos os valores padrão com os valores existentes em $selectedShipping
-            foreach ($defaults as $key => $value) {
-                if (!isset($selectedShipping[$key])) {
-                    $selectedShipping[$key] = $value;
-                }
-            }
-            
-            // Atualizar na sessão
-            Session::put('selected_shipping', $selectedShipping);
-        }
-        
-        // Obter produtos recomendados (até 3 produtos populares que não estão no carrinho)
-        $recommendedVinyls = [];
-        if (count($cartItems) > 0) {
-            // Identificar produtos já no carrinho (tanto por vinyl_master_id quanto por product_id)
-            $cartVinylIds = $cartItems->pluck('vinyl_master_id')->filter()->toArray();
-            $cartProductIds = $cartItems->pluck('product_id')->filter()->toArray();
-            
-            // Buscar produtos recomendados (vinis)
-            $recommendedVinyls = Product::with('productable')
-                ->where('productable_type', 'App\\Models\\VinylMaster')
-                ->whereNotIn('id', $cartProductIds) // Não mostrar produtos já no carrinho
-                ->whereHas('productable', function($query) use ($cartVinylIds) {
-                    $query->whereNotIn('id', $cartVinylIds) // Não mostrar vinis já no carrinho
-                          ->whereHas('vinylSec', function($query) {
-                              $query->where('stock', '>', 0); // Apenas produtos em estoque
-                          });
-                })
-                ->orderBy('created_at', 'desc')
-                ->limit(3)
-                ->get();
-        }
-    
-        // Obter itens da wishlist do usuário
-        $wishlistItems = $user->wishlist()->pluck('vinyl_master_id')->toArray();
-        
-        // Obter o valor do desconto (se houver)
-        $discount = $cart ? $cart->discount : 0;
-        
-        // Verificar se há mensagem de cálculo de frete na sessão
-        $shippingCalculation = Session::get('shipping_calculation');
-        
-        // Se a página está sendo carregada após o cálculo de frete, mas não há opções disponíveis
-        // vamos verificar o motivo
-        if (Session::has('shipping_calculation') && empty($shippingOptions)) {
-            // Se for um cálculo bem-sucedido mas sem opções, isso é estranho
-            if (Session::get('shipping_calculation.success')) {
-                // Forçar a recuperação das opções da sessão novamente
-                $shippingOptions = Session::get('shipping_options', []);
-            }
-        }
         
         return view('site.cart.index', [
-            'cartItems' => $cartItems,
+            'cartItems' => $itemsWithStock,
+            'itemsWithoutStock' => $itemsWithoutStock,
             'savedItems' => $savedItems,
             'cartTotal' => $cartTotal,
-            'zipCode' => $zipCode,
-            'shippingOptions' => $shippingOptions,
-            'selectedShipping' => $selectedShipping,
+            'outOfStockTotal' => $outOfStockTotal,
             'discount' => $discount,
             'recommendedVinyls' => $recommendedVinyls,
             'wishlistItems' => $wishlistItems,
@@ -408,12 +303,38 @@ public function store(Request $request)
 /**
  * Retorna uma resposta JSON padronizada
  */
-private function jsonResponse(bool $success, string $message, array $data = [])
+private function jsonResponse(bool $success, string $message, array $data = [], int $status = 200)
 {
     return response()->json(array_merge(
         ['success' => $success, 'message' => $message],
         $data
-    ));
+    ), $status);
+}
+
+/**
+ * Redireciona o usuário para a página de frete
+ */
+public function moveToShipping()
+{
+    // Verifica se o carrinho tem itens
+    $user = Auth::user();
+    $cart = Cart::where('user_id', $user->id)
+        ->where('status', 'active')
+        ->first();
+        
+    if (!$cart || $cart->items->count() === 0) {
+        return redirect()->route('site.cart.index')
+            ->with('error', 'Seu carrinho está vazio. Adicione produtos antes de continuar.');
+    }
+    
+    // Limpar a sessão de informações de frete anteriores
+    Session::forget([
+        'shipping_options', 
+        'selected_shipping', 
+        'shipping_calculation'
+    ]);
+    
+    return redirect()->route('site.shipping.index');
 }
 
 /**
@@ -718,425 +639,11 @@ public function destroy(Request $request, $id)
         ]);
     }
     
-    /**
-     * Calcula o frete para os itens no carrinho
-     */
-    public function calculateShipping(Request $request)
-    {
-        $request->validate([
-            'zip_code' => 'required|string',
-        ]);
-        
-        // Remover qualquer caractere não numérico do CEP
-        $zipCode = preg_replace('/\D/', '', $request->zip_code);
-        
-        // Validar se o CEP possui 8 dígitos
-        if (strlen($zipCode) !== 8) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'O CEP deve conter 8 dígitos.'
-                ], 422);
-            }
-            
-            return redirect()->back()->with('error', 'O CEP deve conter 8 dígitos.');
-        }
-        
-        // Variável zipCode já definida acima com a limpeza
-        $user = Auth::user();
-        
-        // Obter os itens do carrinho
-        $cartItems = $user->cartItems()
-                          ->with('vinylMaster.vinylSec')
-                          ->where('saved_for_later', false)
-                          ->get();
-        
-        if ($cartItems->isEmpty()) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Seu carrinho está vazio.'
-                ], 422);
-            }
-            
-            return redirect()->back()->with('error', 'Seu carrinho está vazio.');
-        }
-        
-        // Calcular o peso total e valor total dos itens
-        $totalWeight = 0;
-        $totalValue = 0;
-        
-        foreach ($cartItems as $item) {
-            // Verificar se o peso existe e acessar seu valor
-            if ($item->vinylMaster->vinylSec->weight) {
-                $totalWeight += $item->vinylMaster->vinylSec->weight->value * $item->quantity;
-            } else {
-                // Usar um peso padrão caso não exista (ex: 250g para um disco de vinil)
-                $totalWeight += 0.25 * $item->quantity; // 250g em kg
-            }
-            $totalValue += $item->subtotal;
-        }
-        
-        // Chamar o serviço de cálculo de frete
-        $shippingService = new MelhorEnvio();
-        
-        // Preparar os itens do carrinho no formato esperado pelo MelhorEnvio
-        $preparedItems = [];
-        foreach ($cartItems as $item) {
-            $preparedItems[] = [
-                'id' => $item->vinylMaster->id,
-                'quantity' => $item->quantity
-            ];
-        }
-        
-        // Chamar o serviço MelhorEnvio para calcular o frete
-        $shippingOptions = $shippingService->calculateShipping($zipCode, $preparedItems);
-        
-        if (!$shippingOptions['success']) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $shippingOptions['message'] ?? 'Erro ao calcular o frete.'
-                ], 422);
-            }
-            
-            return redirect()->back()->with('error', $shippingOptions['message'] ?? 'Erro ao calcular o frete.');
-        }
-        
-        // Salvar o CEP e as opções de frete na sessão
-        Session::put('shipping_zip_code', $zipCode);
-        Session::put('shipping_options', $shippingOptions['options']);
-        
-        // Adicionar os dados de cálculo de frete na sessão com a estrutura que a view espera
-        Session::put('shipping_calculation', [
-            'success' => true,
-            'message' => 'Frete calculado com sucesso'
-        ]);
-        
-        // Gerar um token de cotação de frete e salvar no banco de dados
-        $quoteToken = \Illuminate\Support\Str::uuid()->toString();
-        Session::put('shipping_quote_token', $quoteToken);
-        
-        // Salvar as informações da cotação no banco de dados
-        $userId = auth()->check() ? auth()->id() : null;
-        $sessionId = Session::getId();
-        
-        // Obter itens do carrinho para calcular o hash
-        $cart = $this->cartService->getCurrentCart();
-        $cartItems = $cart->items()->where('saved_for_later', false)->get();
-        $cartItemsData = $cartItems->map(function($item) {
-            return [
-                'id' => $item->id,
-                'vinyl_id' => $item->vinyl_id,
-                'quantity' => $item->quantity
-            ];
-        })->toArray();
-        
-        // Criar hash dos itens do carrinho para verificar se o conteúdo mudou
-        $cartItemsHash = md5(json_encode($cartItemsData));
-        
-        // Salvar ou atualizar a cotação no banco de dados
-        $shippingQuote = \App\Models\ShippingQuote::updateOrCreate(
-            ['quote_token' => $quoteToken],
-            [
-                'user_id' => $userId,
-                'session_id' => $sessionId,
-                'cart_items_hash' => $cartItemsHash,
-                'cart_items' => json_encode($cartItemsData),
-                'zip_from' => config('shipping.zip_from', '09220360'), // Valor padrão caso a configuração seja nula
-                'zip_to' => $zipCode,
-                'products' => json_encode($preparedItems),
-                'api_response' => json_encode($shippingOptions),
-                'options' => json_encode($shippingOptions['options']),
-                'expires_at' => now()->addDays(1)
-            ]
-        );
-        
-        \Log::info('Cotação de frete salva no banco de dados', [
-            'quote_token' => $quoteToken,
-            'cart_items_count' => count($cartItemsData),
-            'shipping_options_count' => count($shippingOptions['options'])
-        ]);
-        
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Frete calculado com sucesso',
-                'options' => $shippingOptions['options']
-            ]);
-        }
-        
-        return redirect()->back()->with('success', 'Frete calculado com sucesso');
-    }
+    // Método calculateShipping removido - agora está no ShippingController
     
-    /**
-     * Seleciona uma opção de frete
-     */
-    /**
-     * Retorna as opções de frete disponíveis
-     */
-    public function getShippingOptions()
-    {
-        $shippingOptions = Session::get('shipping_options');
-        $selectedShipping = Session::get('selected_shipping');
-        $zipCode = Session::get('shipping_zip_code');
-        
-        \Log::info('Consultando opções de frete', [
-            'has_shipping_options' => !empty($shippingOptions),
-            'has_zip_code' => !empty($zipCode),
-            'zip_code' => $zipCode,
-            'options_count' => is_array($shippingOptions) ? count($shippingOptions) : 0,
-            'has_selected_shipping' => !empty($selectedShipping)
-        ]);
-        
-        if (!$shippingOptions || !$zipCode) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Nenhuma opção de frete disponível. Por favor, calcule o frete primeiro.'
-            ], 404);
-        }
-        
-        // Garantir que as opções de frete sejam um array
-        $shippingOptions = is_array($shippingOptions) ? $shippingOptions : [];
-        
-        return response()->json([
-            'success' => true,
-            'zip_code' => $zipCode,
-            'options' => $shippingOptions,
-            'selected_shipping' => $selectedShipping
-        ]);
-    }
+    // Método getShippingOptions removido - agora está no ShippingController
     
-    /**
-     * Seleciona uma opção de frete
-     */
-    public function selectShipping(Request $request)
-    {
-        $request->validate([
-            'shipping_option' => 'required',
-        ]);
-        
-        // Obter o ID da opção de frete (pode ser um ID simples ou um objeto JSON)
-        $shippingOptionId = $request->shipping_option;
-        
-        // Se for uma string JSON, decodificar para obter o ID
-        if (is_string($shippingOptionId) && strpos($shippingOptionId, '{') === 0) {
-            try {
-                $decodedOption = json_decode($shippingOptionId, true);
-                if (isset($decodedOption['id'])) {
-                    $shippingOptionId = $decodedOption['id'];
-                }
-            } catch (\Exception $e) {
-                // Manter o valor original se não puder decodificar
-            }
-        }
-        
-        \Log::info('Selecionando opção de frete', [
-            'shipping_option_id' => $shippingOptionId,
-        ]);
-        
-        $shippingOptions = Session::get('shipping_options');
-        $isCheckout = $request->is_checkout ?? false;
-        
-        if (!$shippingOptions) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Por favor, calcule o frete primeiro.'
-                ], 422);
-            }
-            
-            return redirect()->back()->with('error', 'Por favor, calcule o frete primeiro.');
-        }
-        
-        // Encontrar a opção selecionada
-        $selectedOption = null;
-        foreach ($shippingOptions as $option) {
-            if ($option['id'] == $shippingOptionId) {
-                $selectedOption = $option;
-                break;
-            }
-        }
-        
-        \Log::info('Resultado da busca por opção de frete', [
-            'found_option' => !is_null($selectedOption),
-            'options_count' => count($shippingOptions),
-        ]);
-        
-        if (!$selectedOption) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Opção de frete inválida.'
-                ], 422);
-            }
-            
-            return redirect()->back()->with('error', 'Opção de frete inválida.');
-        }
-        
-        // Garantir que a opção de frete selecionada tenha todos os campos necessários
-        $selectedOptionComplete = [
-            'id' => $selectedOption['id'] ?? '',
-            'name' => $selectedOption['name'] ?? 'Frete',
-            'price' => $selectedOption['price'] ?? 0,
-            'delivery_time' => $selectedOption['delivery_time'] ?? null,
-            'delivery_estimate' => $selectedOption['delivery_estimate'] ?? 'Prazo a calcular',
-            'company_id' => $selectedOption['company_id'] ?? 0,
-            'company_name' => $selectedOption['company_name'] ?? '',
-        ];
-        
-        // Salvar a opção selecionada na sessão
-        Session::put('selected_shipping', $selectedOptionComplete);
-        
-        // Atualizar ou criar um registro ShippingQuote
-        $quoteToken = Session::get('shipping_quote_token');
-        
-        if ($quoteToken) {
-            $shippingQuote = \App\Models\ShippingQuote::where('quote_token', $quoteToken)->first();
-            
-            if ($shippingQuote) {
-                $shippingQuote->selected_service_id = $selectedOption['id'];
-                $shippingQuote->selected_price = $selectedOption['price'];
-                $shippingQuote->selected_delivery_time = $selectedOption['delivery_time'] ?? null;
-                $shippingQuote->save();
-                
-                // Garantir que o token está na sessão para o checkout
-                Session::put('shipping_quote_token', $quoteToken);
-                
-                \Log::info('Opção de frete atualizada no banco de dados', [
-                    'quote_token' => $quoteToken,
-                    'selected_service_id' => $selectedOption['id'],
-                    'selected_price' => $selectedOption['price']
-                ]);
-            } else {
-                // Se o token existe na sessão mas não no banco, vamos criar um novo
-                // Isso pode acontecer se a sessão persistir mas o registro no banco for excluído
-                $this->createNewShippingQuote($quoteToken, $selectedOption);
-            }
-        } else {
-            // Se não temos token na sessão, vamos gerar um e criar um novo registro
-            $quoteToken = \Illuminate\Support\Str::uuid()->toString();
-            Session::put('shipping_quote_token', $quoteToken);
-            $this->createNewShippingQuote($quoteToken, $selectedOption);
-            
-            \Log::info('Novo token de frete gerado e salvo na sessão', ['quote_token' => $quoteToken]);
-        }
-        
-        // Se estiver no checkout, atualizar o carrinho com o valor do frete
-        if ($isCheckout) {
-            $user = Auth::user();
-            $cart = Cart::where('user_id', $user->id)
-                ->where('status', 'active')
-                ->first();
-                
-            if ($cart) {
-                $cart->shipping_method = $selectedOption['name'];
-                $cart->shipping_cost = $selectedOption['price'];
-                $cart->total = $cart->subtotal - $cart->discount + $cart->shipping_cost;
-                $cart->save();
-            }
-        } else {
-            // Mesmo que não esteja no checkout, vamos atualizar o carrinho para manter a coerência
-            $user = Auth::user();
-            $cart = Cart::where('user_id', $user->id)
-                ->where('status', 'active')
-                ->first();
-                
-            if ($cart) {
-                $cart->shipping_method = $selectedOption['name'];
-                $cart->shipping_cost = $selectedOption['price'];
-                $cart->total = $cart->subtotal - $cart->discount + $cart->shipping_cost;
-                $cart->save();
-                
-                \Log::info('Carrinho atualizado com informações de frete', [
-                    'cart_id' => $cart->id,
-                    'shipping_cost' => $selectedOption['price'],
-                    'total' => $cart->total
-                ]);
-            }
-        }
-        
-        if ($request->wantsJson()) {
-            // Obter o carrinho atualizado para retornar os valores corretos
-            $cart = Cart::where('user_id', Auth::user()->id)
-                ->where('status', 'active')
-                ->first();
-                
-            return response()->json([
-                'success' => true,
-                'message' => 'Opção de frete selecionada com sucesso',
-                'selected_option' => $selectedOption,
-                'shipping_price' => $selectedOption['price'],
-                'cart_total' => $cart ? $cart->total : ($cart->subtotal + $selectedOption['price']),
-                'formatted_shipping' => 'R$ ' . number_format($selectedOption['price'], 2, ',', '.'),
-                'formatted_total' => 'R$ ' . number_format($cart ? $cart->total : ($cart->subtotal + $selectedOption['price']), 2, ',', '.')
-            ]);
-        }
-        
-        $returnRoute = $isCheckout ? 'site.checkout.index' : 'site.cart.index';
-        
-        return redirect()->route($returnRoute)
-                         ->with('success', 'Opção de frete selecionada com sucesso');
-    }
+    // Método selectShipping removido - agora está no ShippingController
     
-    /**
-     * Cria um novo registro de cotação de frete
-     */
-    protected function createNewShippingQuote($quoteToken, $selectedOption)
-    {
-        $user = Auth::user();
-        $sessionId = Session::getId();
-        
-        // Obter itens do carrinho para calcular o hash
-        $cartItems = $user->cartItems()
-                         ->with('vinylMaster.vinylSec')
-                         ->where('saved_for_later', false)
-                         ->get();
-        
-        // Preparar dados de itens para salvar na cotação
-        $cartItemsData = $cartItems->map(function($item) {
-            return [
-                'id' => $item->id,
-                'vinyl_master_id' => $item->vinyl_master_id,
-                'quantity' => $item->quantity
-            ];
-        })->toArray();
-        
-        // Hash para identificar o conjunto de itens atual
-        $cartItemsHash = md5(json_encode($cartItemsData));
-        
-        // Preparar itens no formato do Melhor Envio
-        $preparedItems = [];
-        foreach ($cartItems as $item) {
-            $preparedItems[] = [
-                'id' => $item->vinylMaster->id,
-                'quantity' => $item->quantity
-            ];
-        }
-        
-        // Criar nova cotação no banco de dados
-        $shippingQuote = \App\Models\ShippingQuote::create([
-            'quote_token' => $quoteToken,
-            'user_id' => $user->id,
-            'session_id' => Session::getId(),
-            'cart_items_hash' => $cartItemsHash,
-            'cart_items' => json_encode($cartItemsData),
-            'zip_from' => config('shipping.zip_from', '09220360'),
-            'zip_to' => Session::get('shipping_zip_code'),
-            'products' => json_encode($preparedItems),
-            'options' => json_encode(Session::get('shipping_options', [])),
-            'selected_service_id' => $selectedOption['id'],
-            'selected_price' => $selectedOption['price'],
-            'selected_delivery_time' => $selectedOption['delivery_time'] ?? null,
-            'expires_at' => now()->addDays(1)
-        ]);
-        
-        \Log::info('Nova cotação de frete criada', [
-            'quote_token' => $quoteToken,
-            'shipping_quote_id' => $shippingQuote->id,
-            'selected_service_id' => $selectedOption['id']
-        ]);
-        
-        return $shippingQuote;
-    }
+    // Método createNewShippingQuote removido - agora está no ShippingController
 }

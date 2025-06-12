@@ -30,7 +30,17 @@ return [
         'non_commercial' => env('MELHORENVIO_NON_COMMERCIAL', true),
     ],
     
-    'services' => [1, 2], // Serviços padrão: 1=PAC, 2=SEDEX
+    /*
+     * Serviços disponíveis no Melhor Envio:
+     * 1 = PAC
+     * 2 = SEDEX
+     * 3 = Jadlog Package
+     * 4 = Jadlog Com
+     * 17 = Mini Envios
+     * 22 = Azul Cargo Express
+     * 37 = Latam Cargo
+     */
+    'services' => [1, 2, 3, 4, 17, 22, 37], // Todos os serviços disponíveis
     
     'sandbox' => env('MELHORENVIO_ENV', 'sandbox') !== 'production',
 ];

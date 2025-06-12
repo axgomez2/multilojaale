@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Providers\StoreServiceProvider;
+use App\Providers\ValidatorServiceProvider;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,6 +15,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Registrar o StoreServiceProvider
         $this->app->register(StoreServiceProvider::class);
+        
+        // Registrar o ValidatorServiceProvider para validações customizadas
+        $this->app->register(ValidatorServiceProvider::class);
     }
 
     /**

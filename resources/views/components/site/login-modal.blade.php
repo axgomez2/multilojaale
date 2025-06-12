@@ -1,5 +1,6 @@
 @props(['id' => 'login-modal'])
 
+<!-- Este componente é usado apenas para o modal desktop -->
 <div x-data="{ open: false }" class="relative" @keydown.escape.window="open = false">
     <!-- Toggle Button -->
     <button @click="open = !open; $root.openDropdown = open" class="flex flex-col items-center text-white hover:text-yellow-400 transition-colors focus:outline-none" title="Usuário">

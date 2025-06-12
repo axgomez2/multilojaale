@@ -168,7 +168,7 @@ class OrdersController extends Controller
         }
         
         // Verificar se o pedido tem endereço de entrega
-        if (!$order->shippingAddress) {
+        if (!$order->address) {
             return redirect()->back()->with('error', 'O pedido não possui endereço de entrega.');
         }
         
@@ -226,7 +226,7 @@ class OrdersController extends Controller
     private function preparePackageData(Order $order)
     {
         // Obter dados do endereço de entrega
-        $shippingAddress = $order->shippingAddress;
+        $shippingAddress = $order->address;
         
         // Preparar informações do destinatário
         $recipient = [

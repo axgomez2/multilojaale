@@ -312,6 +312,9 @@
         <!-- Livewire Scripts -->
         @livewireScripts
         
+        <!-- Scripts empilhados de componentes -->
+        @stack('scripts')
+        
         <script>
             // Listener para eventos de notificação do Livewire
             document.addEventListener('livewire:init', function() {

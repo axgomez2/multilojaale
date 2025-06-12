@@ -54,7 +54,7 @@ return [
     'mercadopago' => [
         'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
         'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
-        'sandbox' => env('MERCADOPAGO_SANDBOX', false),
+        'sandbox' => env('MERCADOPAGO_SANDBOX', true),
         'webhook_url' => env('MERCADOPAGO_WEBHOOK_URL'),
         'site_id' => 'MLB'  // MLB = Brasil
     ],

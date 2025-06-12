@@ -28,10 +28,10 @@ Route::prefix('carrinho')->name('site.cart.')->middleware(['auth', 'verified'])-
     Route::put('/salvar-para-depois/{id}', [CartController::class, 'saveForLater'])->name('save-for-later');
     Route::put('/mover-para-carrinho/{id}', [CartController::class, 'moveToCart'])->name('move-to-cart');
     
-    // Rotas para cálculo de frete
-    Route::post('/calcular-frete', [CartController::class, 'calculateShipping'])->name('calculate-shipping');
-    Route::get('/opcoes-frete', [CartController::class, 'getShippingOptions'])->name('shipping-options');
-    Route::post('/selecionar-frete', [CartController::class, 'selectShipping'])->name('select-shipping');
+    // Removido rotas de cálculo e seleção de frete (movido para shipping)
+    
+    // Redirecionar para a página de frete (checkout)
+    Route::get('/finalizar', [CartController::class, 'moveToShipping'])->name('finish');
     
     // Rota para aplicação de cupom de desconto
     Route::post('/aplicar-cupom', [CartController::class, 'applyCoupon'])->name('apply-coupon');

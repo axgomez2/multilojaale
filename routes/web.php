@@ -4,9 +4,24 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\CategoryController;
 use App\Http\Controllers\YouTubeController;
+use App\Http\Controllers\Site\AboutController;
+use App\Http\Controllers\Site\DeejaysController;
+use App\Http\Controllers\Site\PaylistController;
+use App\Http\Controllers\Site\MemberController;
+use App\Http\Controllers\Site\OfferController;
 
 // Rota pública principal (home)
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/sobre', [AboutController::class, 'index'])->name('about');
+
+Route::get('/deejays', [DeejaysController::class, 'index'])->name('deejays');
+
+Route::get('/playlist', [PaylistController::class, 'index'])->name('playlist');
+
+Route::get('/area-de-membros', [MemberController::class, 'index'])->name('member.index');
+
+Route::get('/ofertas', [OfferController::class, 'index'])->name('offer.index');
 
 
 // Rotas de verificação de email
@@ -151,6 +166,7 @@ require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/cart.php';
 require __DIR__.'/checkout.php';
+require __DIR__.'/shipping.php'; // Rotas de frete e entrega
 require __DIR__.'/debug.php'; // Rotas de debug para testes
 
 // IMPORTANTE: Rota para detalhes do disco de vinil - deve ser a ÚTIMA rota

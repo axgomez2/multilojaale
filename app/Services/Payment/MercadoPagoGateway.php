@@ -91,12 +91,12 @@ class MercadoPagoGateway implements PaymentGatewayInterface
     }
     
     /**
-     * Get payment status from Mercado Pago.
+     * Get payment status from Mercado Pago by reference ID.
      * 
      * @param string $referenceId External reference ID
      * @return string Status of the payment
      */
-    public function getPaymentStatus(string $referenceId): string
+    public function getPaymentStatusByReference(string $referenceId): string
     {
         try {
             // Configurar SDK do Mercado Pago

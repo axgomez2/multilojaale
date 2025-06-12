@@ -311,8 +311,13 @@ document.addEventListener('alpine:init', () => {
             
             const playerElement = document.getElementById('vinyl-player');
             if (playerElement) {
-                playerElement.classList.remove('translate-y-full');
-                playerElement.classList.add('translate-y-0');
+                // Primeiro remover a classe hidden para garantir que o player seja visível
+                playerElement.classList.remove('hidden');
+                // Pequeno timeout para garantir que a transição funcione após o elemento se tornar visível
+                setTimeout(() => {
+                    playerElement.classList.remove('translate-y-full');
+                    playerElement.classList.add('translate-y-0');
+                }, 10);
                 this.isOpen = true;
             }
         },
@@ -331,9 +336,15 @@ document.addEventListener('alpine:init', () => {
             
             const playerElement = document.getElementById('vinyl-player');
             if (playerElement) {
+                // Primeiro iniciar a animação de saída
                 playerElement.classList.remove('translate-y-0');
                 playerElement.classList.add('translate-y-full');
                 this.isOpen = false;
+                
+                // Adicionar a classe hidden após a animação terminar
+                setTimeout(() => {
+                    playerElement.classList.add('hidden');
+                }, 300); // 300ms é a duração da transição definida na classe CSS
             }
         },
         

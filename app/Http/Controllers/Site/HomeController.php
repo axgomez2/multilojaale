@@ -8,6 +8,7 @@ use App\Models\VinylSec;
 use App\Models\CatStyleShop;
 use App\Models\Wishlist;
 use App\Models\Wantlist;
+use App\Models\RecordLabel;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -30,6 +31,9 @@ class HomeController extends Controller
         // Buscar categorias principais com seus discos
         $categories = $this->getCategoriesWithVinyls();
         
+        // Buscar as principais gravadoras
+        $topLabels = $this->getTopLabels();
+        
         // Buscar os lançamentos mais recentes
         $latestVinyls = VinylMaster::with([
             'vinylSec', 
@@ -46,6 +50,25 @@ class HomeController extends Controller
         ->latest() // Mais recentes primeiro
         ->take(10) // Limite de 10 registros para o carrossel
         ->get();
+
+        $slideVinyls = VinylMaster::with([
+            'vinylSec', 
+            'vinylSec.midiaStatus', 
+            'vinylSec.coverStatus', 
+            'vinylSec.supplier',
+            'artists',
+            'tracks',
+            'recordLabel',
+            'categories' // Corrigido de catStyleShops para catStyleShop (singular)
+        ])
+        ->whereHas('vinylSec', function ($query) {
+            $query->where('in_stock', true);
+            $query->where('price', '>', 0);
+        })
+        ->latest()
+        ->take(10)
+        ->get();
+        
         
         // A disponibilidade é agora tratada pelo componente vinyl-card.
 
@@ -70,8 +93,10 @@ class HomeController extends Controller
             'latestVinyls' => $latestVinyls,
             'featuredVinyls' => $featuredVinyls,
             'categories' => $categories,
+            'topLabels' => $topLabels,
             'wishlistItems' => $wishlistItems,
-            'wantlistItems' => $wantlistItems
+            'wantlistItems' => $wantlistItems,
+            'slideVinyls' => $slideVinyls // Adicionando a variável slideVinyls
         ]);
     }
     
@@ -113,6 +138,8 @@ class HomeController extends Controller
         // Se a categoria não existir, retornar uma coleção vazia
         return collect([]);
     }
+
+
     
     /**
      * Buscar categorias principais com seus vinis
@@ -122,7 +149,14 @@ class HomeController extends Controller
     private function getCategoriesWithVinyls()
     {
         // Buscar categorias que tenham discos disponíveis (excluindo a categoria 'destaque')
-        $categories = CatStyleShop::whereHas('vinylMasters', function($query) {
+        // Agora ordenadas por quantidade de discos (decrescente)
+        $categories = CatStyleShop::withCount(['vinylMasters' => function($query) {
+                // Contar apenas discos com preço definido
+                $query->whereHas('vinylSec', function($q) {
+                    $q->where('price', '>', 0);
+                });
+            }])
+            ->whereHas('vinylMasters', function($query) {
                 // Apenas discos com preço definido
                 $query->whereHas('vinylSec', function($q) {
                     $q->where('price', '>', 0);
@@ -130,8 +164,8 @@ class HomeController extends Controller
             })
             ->where('nome', '!=', 'destaque')
             ->where('nome', '!=', 'Destaque')
-            ->orderBy('nome')
-            ->take(5) // Limitado a 5 categorias principais
+            ->orderBy('vinyl_masters_count', 'desc') // Ordenar por quantidade de discos (decrescente)
+            ->take(10) // Aumentado para 10 categorias principais
             ->get();
         
         // Para cada categoria, buscar os 10 discos mais recentes
@@ -157,14 +191,16 @@ class HomeController extends Controller
                     $query->where('price', '>', 0);
                 })
                 ->latest()
-                ->take(10) // Limitado a 10 discos por carrossel
+                ->take(10) // Mantido em 10 discos por carrossel
                 ->get();
             
             // A disponibilidade é agora tratada pelo componente vinyl-card.
-            // Retornar a categoria com seus discos
+            // Retornar a categoria com seus discos e contagem total para exibir "Ver mais"
             return [
                 'category' => $category,
-                'vinyls' => $vinyls
+                'vinyls' => $vinyls,
+                'total_count' => $category->vinyl_masters_count, // Adicionando contagem total para exibição
+                'category_url' => route('site.category', ['slug' => $category->slug]) // Adicionando URL da categoria
             ];
         })->filter(function($item) {
             // Filtrar apenas categorias que tenham discos
@@ -218,6 +254,29 @@ class HomeController extends Controller
      * @param string $slug
      * @return \Illuminate\View\View
      */
+    /**
+     * Get top record labels based on vinyl count
+     * 
+     * @param int $limit
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getTopLabels($limit = 16)
+    {
+        // Get labels that have the most vinyl records
+        return RecordLabel::withCount('vinylMasters')
+            ->whereHas('vinylMasters', function($query) {
+                $query->whereHas('vinylSec', function($q) {
+                    $q->where('in_stock', true)
+                      ->where('price', '>', 0);
+                });
+            })
+            ->orderBy('vinyl_masters_count', 'desc')
+            ->where('logo', '!=', '')
+            ->whereNotNull('logo')
+            ->limit($limit)
+            ->get();
+    }
+    
     public function category($slug)
     {
         // Obter a categoria pelo slug

@@ -86,6 +86,14 @@ class Order extends Model
     }
     
     /**
+     * Alias for address() - used in views for better readability
+     */
+    public function shippingAddress(): BelongsTo
+    {
+        return $this->address();
+    }
+    
+    /**
      * Get the billing address associated with the order.
      */
     public function billingAddress(): BelongsTo

@@ -1,446 +1,488 @@
 <x-app-layout>
-
-
-    <!-- cabeçalho do carrinho -->
-<div class="max-w-6xl max-lg:max-w-2xl mx-auto p-4">
-  <h1 class="text-xl font-semibold text-slate-900">Meu Carrinho:  
-    <span class="text-gray-600 text-sm mt-1">{{ $cartItems->count() }} {{ $cartItems->count() == 1 ? 'item' : 'itens' }} ({{ $cartItems->sum('quantity') }} {{ $cartItems->sum('quantity') == 1 ? 'unidade' : 'unidades' }})</span>
-  </h1>
-    
-@if(count($cartItems) > 0)
-    
-  <form action="{{ route('site.cart.clear') }}" method="POST" class="inline">
-    @csrf
-    @method('DELETE')
-    <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium flex items-center">
-      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-      </svg>
-      Limpar carrinho
-    </button>
-  </form>
-
-@endif
-
-
-<div class="max-w-7xl max-lg:max-w-2xl mx-auto p-4">
-         
-          <div class="grid lg:grid-cols-3 lg:gap-x-8 gap-x-6 gap-y-8 mt-6">
-              <div class="lg:col-span-2 space-y-6">
-                <!-- Script para wishlist e controle de quantidade -->
-                  @if(count($cartItems) > 0 || count($savedItems) > 0)
-                      <div class="lg:flex lg:space-x-6">
-                      @if(count($cartItems) > 0)
-                  
-                  <div class="space-y-6">
-                  @foreach($cartItems as $item)
-                    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-                      <div class="space-y-4 md:flex md:items-center md:justify-between md:gap-6 md:space-y-0">
-                        <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" class="shrink-0 md:order-1">
-                          <img class="h-32 w-32  dark:hidden" src="{{ $item->vinylMaster->cover_image }}" alt="vinyl image" />
-                          <img class="hidden h-32 w-32 dark:block" src="{{ $item->vinylMaster->cover_image }}" alt="vinyl image" />
-                        </a>
-  
-                        <label for="counter-input" class="sr-only">Choose quantity:</label>
-                        <div class="flex items-center justify-between md:order-3 md:justify-end">
-                          <form action="{{ route('site.cart.update', $item->id) }}" method="POST" class="flex items-center" id="update-form-{{ $item->id }}">
-                            @csrf
-                            @method('PUT')
-                            <button type="button" onclick="decrementQuantity('{{ $item->id }}')" class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100 dark:border-gray-600 dark:hover:bg-gray-600 dark:focus:ring-gray-700">
-                              <svg class="h-2.5 w-2.5 text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h16" />
-                              </svg>
-                            </button>
-                            <input type="number" name="quantity" id="quantity-{{ $item->id }}" class="w-10 shrink-0 border-0 bg-transparent text-center text-sm font-medium text-gray-900 focus:outline-none focus:ring-0" value="{{ $item->quantity }}" min="1" max="{{ min(10, $item->vinylMaster->vinylSec->stock) }}" required readonly />
-                            <button type="button" onclick="incrementQuantity('{{ $item->id }}')" class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-100 dark:border-gray-600 dark:hover:bg-gray-600 dark:focus:ring-gray-700">
-                              <svg class="h-2.5 w-2.5 text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16" />
-                              </svg>
-                            </button>
-                          </form>
-                          <div class="text-end md:order-4 md:w-32">
-                            <p class="text-base font-bold text-gray-900">R$ {{ number_format($item->vinylMaster->vinylSec->price, 2, ',', '.') }}</p>
-                            @if($item->vinylMaster->vinylSec->original_price > $item->vinylMaster->vinylSec->price)
-                              <p class="text-xs text-gray-500 line-through">R$ {{ number_format($item->vinylMaster->vinylSec->original_price, 2, ',', '.') }}</p>
-                            @endif
-                          </div>
-                        </div>
-  
-                        <div class="w-full min-w-0 flex-1 space-y-4 md:order-2 md:max-w-md">
-                          <a href="#" class="text-base font-medium text-gray-900 hover:underline ">{{ $item->vinylMaster->title }}</a>
-                          <p>{{ $item->vinylMaster->artists->first()->name }}</p>
-                          <div class="flex items-center gap-4">
-                            <button type="button" onclick="toggleWishlist('{{ $item->vinylMaster->id }}', this)" data-vinyl-id="{{ $item->vinylMaster->id }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 hover:underline">
-                              <svg class="me-1.5 h-5 w-5 wishlist-icon {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'text-red-600' : '' }}" 
-                                  aria-hidden="true" 
-                                  xmlns="http://www.w3.org/2000/svg" 
-                                  width="24" 
-                                  height="24" 
-                                  fill="{{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'currentColor' : 'none' }}" 
-                                  viewBox="0 0 24 24">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.01 6.001C6.5 1 1 8 5.782 13.001L12.011 20l6.23-7C23 8 17.5 1 12.01 6.002Z" />
-                              </svg>
-                              {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}
-                            </button>
-  
-                            <form action="{{ route('site.cart.save-for-later', $item->id) }}" method="POST" class="inline">
-                              @csrf
-                              @method('PUT')
-                              <button type="submit" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 hover:underline">
-                                <svg class="me-1.5 h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4-4m-4 4-4-4M6 10h12"/>
-                                </svg>
-                                Salvar para depois
-                              </button>
-                            </form>
-   
-                            <form action="{{ route('site.cart.remove', $item->id) }}" method="POST" class="inline">
-                              @csrf
-                              @method('DELETE')
-                              <button type="submit" class="inline-flex items-center text-sm font-medium text-red-600 hover:underline">
-                                <svg class="me-1.5 h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6" />
-                                </svg>
-                                Remover
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  @endforeach
-                  </div>
-                @endif  
-                      </div>
-                  @else
-                      <!-- Mensagem de carrinho vazio -->
-                      <div class="bg-white rounded-lg shadow-md p-8 text-center mb-8">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                          </svg>
-                          <h2 class="text-2xl font-bold mb-2">Seu carrinho está vazio</h2>
-                          <p class="text-gray-600 mb-6">Parece que você ainda não adicionou nenhum item ao seu carrinho.</p>
-                          
-                          <a href="{{ route('home') }}" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition-colors inline-block">Voltar para o site</a>
-                      </div>
-                  @endif
-
-                  <!-- Verificar se há itens salvos para depois - independente do carrinho estar vazio ou não -->
-                  @if(count($savedItems) > 0)
-                      <div class="bg-white rounded-lg shadow-md p-6 mt-8">
-                          <div class="flex justify-between items-center border-b pb-4 mb-4">
-                              <h2 class="text-xl font-semibold">Itens Salvos Para Depois ({{ count($savedItems) }})</h2>
-                              <div class="text-sm text-gray-600">
-                                  <span class="italic">Itens salvados não são incluídos no total do carrinho</span>
-                              </div>
-                          </div>
-                          
-                          @foreach($savedItems as $item)
-                <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                  <div class="flex flex-col sm:flex-row items-start gap-4">
-                    <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" class="shrink-0">
-                      <img src="{{ $item->vinylMaster->cover_image }}" alt="{{ $item->vinylMaster->title }}" class="w-24 h-24 object-cover rounded">
-                    </a>
-                    <div class="flex-1">
-                      <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" class="font-semibold hover:text-purple-600">
-                        {{ $item->vinylMaster->title }}
-                      </a>
-                      <p class="text-gray-600 text-sm">{{ $item->vinylMaster->artists->first()->name }}</p>
-                      <p class="mt-2">
-                        <span class="{{ $item->vinylMaster->isAvailable() ? 'text-green-600' : 'text-red-600' }} text-sm">
-                          {{ $item->vinylMaster->isAvailable() ? 'Disponível' : 'Indisponível' }}
-                        </span>
-                      </p>
-                      <p class="font-semibold mt-2">R$ {{ number_format($item->vinylMaster->vinylSec->price, 2, ',', '.') }}</p>
-                      <div class="flex flex-wrap gap-2 mt-3">
-                        @if($item->vinylMaster->isAvailable())
-                          <form action="{{ route('site.cart.move-to-cart', $item->id) }}" method="POST" class="inline">
-                            @csrf
-                            @method('PUT')
-                            <button type="submit" class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm">
-                              Mover ao carrinho
-                            </button>
-                          </form>
-                        @endif
-                        <form action="{{ route('site.cart.remove', $item->id) }}" method="POST" class="inline">
-                          @csrf
-                          @method('DELETE')
-                          <button type="submit" class="text-red-600 hover:text-red-800 border border-red-600 hover:border-red-800 px-3 py-1 rounded text-sm">
-                            Remover
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              @endforeach
-                      </div>
-                  @endif
-              </div>
-
-              <div class="bg-white rounded-md px-4 py-6 h-max shadow-sm border border-gray-200">
-                  <ul class="text-slate-500 font-medium space-y-4">
-                  <li class="flex flex-wrap gap-4 text-sm">
-                  <div class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 sm:p-6">
-          <form class="space-y-4" action="{{ route('site.cart.apply-coupon') }}" method="POST">
-            @csrf
+    <!-- Container principal do carrinho -->
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <!-- Cabeçalho do carrinho -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-6">
             <div>
-              <label for="coupon_code" class="mb-2 block text-sm font-medium text-gray-900">Você possui um cupom de desconto?</label>
-              <input 
-                type="text" 
-                id="coupon_code" 
-                name="coupon_code"
-                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-purple-500 focus:ring-purple-500" 
-                placeholder="Digite seu código aqui" 
-                required 
-              />
+                <h1 class="text-2xl font-bold">Meu Carrinho</h1>
+                <p class="text-gray-600 text-sm mt-1">{{ $cartItems->count() }}
+                    {{ $cartItems->count() == 1 ? 'item' : 'itens' }} ({{ $cartItems->sum('quantity') }}
+                    {{ $cartItems->sum('quantity') == 1 ? 'unidade' : 'unidades' }})</p>
             </div>
-            <button 
-              type="submit" 
-              class="flex w-full items-center justify-center rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300"
-            >
-              Aplicar Cupom
-            </button>
-          </form>
+            @if (count($cartItems) > 0)
+                <form action="{{ route('site.cart.clear') }}" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-red-600 hover:text-red-800 hover:bg-red-50 text-sm font-medium flex items-center px-3 py-1.5 rounded-md border border-red-200 transition-colors">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Limpar Carrinho
+                    </button>
+                </form>
+            @endif
         </div>
 
-                    </li>
-
-                  
-                    
-                      <li class="flex flex-wrap gap-4 text-sm">Subtotal <span class="ml-auto font-semibold text-slate-900">R$ {{ number_format($cartTotal, 2, ',', '.') }}</span></li>
-                      
-                      @if(isset($discount) && $discount > 0)
-                      <li class="flex flex-wrap gap-4 text-sm">Desconto: <span class="ml-auto font-semibold text-red-600">-R$ {{ number_format($discount, 2, ',', '.') }}</span></li>
-                      @endif
-
-                      <li class="flex flex-wrap gap-4 text-sm">
-                        <h3 class="font-medium mb-3">Calcular Frete</h3>
-                  
-                        <form action="{{ route('site.cart.calculate-shipping') }}" method="POST" class="mb-4">
-                          @csrf
-                          <div class="flex">
-                            <input 
-                              type="text" 
-                              name="zip_code" 
-                              id="zip_code"
-                              value="{{ $zipCode ?? '' }}" 
-                              placeholder="00000-000" 
-                              class="flex-1 px-3 py-2 border rounded-l text-sm" 
-                              maxlength="9"
-                              required
-                              oninput="this.value = maskCEP(this.value)"
-                            >
-                            @if(isset($selectedShipping) && $selectedShipping)
-                              <button type="button" 
-                                onclick="ShippingModal.open()" 
-                                class="bg-white text-purple-600 border border-purple-600 hover:bg-purple-50 px-4 py-2 rounded-r text-sm font-medium transition-colors">
-                                Alterar
-                              </button>
-                            @else
-                              <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-r text-sm font-medium">
-                                Calcular
-                              </button>
-                            @endif
-                          </div>
-                        </form>
-                      </li>
-
-                      <li class="flex flex-wrap gap-4 text-sm">
-                      @if(auth()->check())
-                        @php
-                          $userAddresses = auth()->user()->addresses ?? collect([]);
-                        @endphp
+        <!-- Conteúdo principal do carrinho -->
+        <div class="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-4 lg:gap-8">
+            <!-- Coluna da esquerda - Itens do carrinho -->
+            <div class="lg:col-span-2 space-y-6">
+                @if (count($cartItems) > 0)
+                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+                        <div class="mb-4 border-b pb-4">
+                            <h2 class="text-lg font-semibold">Itens no Carrinho ({{ count($cartItems) }})</h2>
+                        </div>
                         
-                        @if($userAddresses->count() > 0)
-                          <div class="mt-3">
-                            <h4 class="text-sm font-medium mb-2">Seus endereços:</h4>
-                            <div class="space-y-2">
-                              @foreach($userAddresses as $address)
-                                <div class="border rounded p-2 text-sm address-item {{ isset($zipCode) && $zipCode == $address->zipcode ? 'border-purple-500 bg-purple-50' : '' }}" data-zipcode="{{ preg_replace('/\D/', '', $address->zipcode) }}">
-                                  <div class="flex justify-between items-start">
-                                    <div>
-                                      <p class="font-medium">{{ $address->name }}</p>
-                                      <p class="text-gray-600">{{ $address->street }}, {{ $address->number }}</p>
-                                      <p class="text-gray-600">{{ $address->neighborhood }} - {{ $address->city }}/{{ $address->state }}</p>
-                                      <p class="text-gray-600">CEP: {{ $address->zipcode }}</p>
-                                    </div>
-                                    <button type="button" onclick="useAddress('{{ $address->zipcode }}')" class="text-sm text-purple-600 hover:text-purple-800">
-                                      Usar
-                                    </button>
-                                  </div>
-                                </div>
-                              @endforeach
-                            </div>
-                          </div>
-                        @else
-                          <div class="mt-3 p-3 bg-gray-50 rounded text-sm">
-                            <p>Você ainda não possui endereços cadastrados.</p>
-                            <button type="button" onclick="openAddressModal()" class="mt-2 text-purple-600 hover:text-purple-800 font-medium">
-                              + Adicionar endereço
-                            </button>
-                          </div>
-                        @endif
-                      @endif
-
-                      </li>
-                      <!-- Seção de cálculo de frete -->
-                      <div class="mb-3 mt-4" id="shipping-section">
-                                        @if(empty($shippingOptions))
-                                          <!-- Formulário de cálculo quando não há opções -->
-                                          
-                                          
-                                          @if(session('shipping_calculation') && !session('shipping_calculation.success'))
-                                            <div class="text-red-600 text-sm my-2">
-                                              {{ session('shipping_calculation.message') }}
-                                            </div>
-                                          @endif
-                                          
-                                        @else
-                                          <!-- Exibir opções de frete quando disponíveis -->
-                                          <div class="flex justify-between items-center mb-3">
-                                            <h4 class="text-sm font-medium">Opções de frete para {{ $zipCode ? substr_replace($zipCode, '-', 5, 0) : 'seu CEP' }}:</h4>
-                                          </div>
-                                          <div class="space-y-2">
-                                            @foreach($shippingOptions as $option)
-                                              @php
-                                                $isSelected = isset($selectedShipping) && $selectedShipping['id'] == $option['id'];
-                                              @endphp
-                                              <form action="{{ route('site.cart.select-shipping') }}" method="POST" class="mb-0">
-                                                @csrf
-                                                <input type="hidden" name="shipping_option" value="{{ $option['id'] ?? '' }}">
-                                                <button type="submit" class="w-full text-left cursor-pointer transition-colors duration-200 {{ $isSelected ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50 border-gray-200' }} p-3 rounded border block">
-                                                  <div class="flex items-center justify-between">
-                                                    <div>
-                                                      <p class="font-medium">{{ $option['name'] ?? $option['title'] ?? 'Opção de frete' }}</p>
-                                                      <p class="text-xs text-gray-500">{{ $option['delivery_estimate'] ?? ($option['delivery_time'] ? ($option['delivery_time'] . ' ' . ($option['delivery_time'] == 1 ? 'dia útil' : 'dias úteis')) : 'Prazo a calcular') }}</p>
+                        <div class="space-y-4">
+                            @foreach ($cartItems as $item)
+                                <div class="border-b border-gray-200 pb-4 mb-4 last:border-b-0 last:mb-0 last:pb-0">
+                                    <div class="flex flex-col sm:flex-row gap-4">
+                                        <!-- Imagem do produto (menor em mobile) -->
+                                        <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" class="flex-shrink-0">
+                                            <img class="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded" 
+                                                src="{{ $item->vinylMaster->cover_image }}" 
+                                                alt="{{ $item->vinylMaster->title }}" />
+                                        </a>
+                                        
+                                        <!-- Informações do produto -->
+                                        <div class="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3">
+                                            <!-- Título e artista (ao lado da imagem em mobile) -->
+                                            <div class="flex-1">
+                                                <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" 
+                                                   class="text-base font-medium text-gray-900 hover:text-purple-600 hover:underline">
+                                                    {{ $item->vinylMaster->title }}
+                                                </a>
+                                                <p class="text-sm text-gray-600 mt-1">{{ $item->vinylMaster->artists->first()->name }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">{{ $item->vinylMaster->label }} / {{ $item->vinylMaster->catalog_number }}</p>
+                                                
+                                                @if (!$item->has_stock)
+                                                    <div class="bg-red-100 border border-red-400 text-red-700 px-2 py-1 rounded text-xs mt-2 inline-block">
+                                                        <span class="font-bold">Sem estoque suficiente</span>
                                                     </div>
-                                                    <div class="flex items-center">
-                                                      <span class="font-medium">{{ $option['formatted_price'] ?? ('R$ ' . number_format($option['price'] ?? 0, 2, ',', '.')) }}</span>
-                                                      @if($isSelected)
-                                                        <svg class="w-5 h-5 ml-2 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                        </svg>
-                                                      @endif
-                                                    </div>
-                                                  </div>
-                                                </button>
-                                              </form>
-                                            @endforeach
-                                          </div>
-                                          
-                                          @if(!count($shippingOptions))
-                                            <div class="text-center p-4 bg-gray-50 rounded">
-                                              <p class="text-gray-500">Nenhuma opção de frete disponível. Por favor, verifique o CEP informado.</p>
+                                                @endif
                                             </div>
-                                          @endif
-                                        @endif
-                                      <!-- Mensagem de erro fora das condições principais, será exibida apenas quando necessário -->
-                                      @if(session('shipping_calculation') && !session('shipping_calculation.success') && empty($shippingOptions))
-                                        <div class="text-red-600 text-sm my-2">
-                                          {{ session('shipping_calculation.message') }}
+                                            
+                                            <!-- Quantidade e preço -->
+                                            <div class="flex items-center justify-between sm:flex-col sm:items-end sm:min-w-[120px]">
+                                                <!-- Controle de quantidade -->
+                                                <div class="flex items-center">
+                                                    <form action="{{ route('site.cart.update', $item->id) }}" method="POST" class="flex items-center" id="update-form-{{ $item->id }}">
+                                                        @csrf
+                                                        @method('PUT')
+                                                        <button type="button" onclick="decrementQuantity('{{ $item->id }}')" 
+                                                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-white text-gray-500 hover:bg-gray-100">
+                                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                                            </svg>
+                                                        </button>
+                                                        <input type="number" name="quantity" id="quantity-{{ $item->id }}" 
+                                                            class="mx-1 h-6 w-10 rounded border-gray-200 text-center text-sm" 
+                                                            value="{{ $item->quantity }}" min="1" max="{{ min(10, $item->vinylMaster->vinylSec->stock) }}" readonly />
+                                                        <button type="button" onclick="incrementQuantity('{{ $item->id }}')" 
+                                                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-white text-gray-500 hover:bg-gray-100">
+                                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                                
+                                                <!-- Preço -->
+                                                <div class="text-right">
+                                                    <p class="text-base font-bold text-gray-900">{{ number_format($item->vinylMaster->vinylSec->price, 2, ',', '.') }} €</p>
+                                                    @if ($item->vinylMaster->vinylSec->original_price > $item->vinylMaster->vinylSec->price)
+                                                        <p class="text-xs text-gray-500 line-through">{{ number_format($item->vinylMaster->vinylSec->original_price, 2, ',', '.') }} €</p>
+                                                    @endif
+                                                </div>
+                                            </div>
                                         </div>
-                                      @endif
-                                      </div>
-
-                                      
-                      <li class="flex flex-wrap gap-4 text-sm">
-                         <!-- Frete selecionado -->
-                        <dl class="flex items-center justify-between gap-4">
-                          <dt class="text-base font-normal text-gray-500 dark:text-gray-400">Frete</dt>
-                          <dd class="text-base font-normal text-gray-900 flex justify-between items-center" id="shipping-cost">
-                            @if(isset($selectedShipping))
-                              <span>{{ $selectedShipping['name'] ?? 'Frete selecionado' }} - {{ $selectedShipping['delivery_estimate'] ?? 'Prazo a calcular' }}</span>
-                              <span>R$ {{ number_format($selectedShipping['price'] ?? 0, 2, ',', '.') }}</span>
-                            @else
-                              <span>Calculado no checkout</span>
+                                    </div>
+                                    
+                                    <!-- Botões de ação agrupados (abaixo em mobile, à direita em desktop) -->
+                                    <div class="mt-3 flex justify-end">
+                                        <div class="inline-flex rounded-md shadow-sm" role="group">
+                                            <!-- Botão de favoritos -->
+                                            <button type="button" onclick="toggleWishlist('{{ $item->vinylMaster->id }}', this)" 
+                                                data-vinyl-id="{{ $item->vinylMaster->id }}" 
+                                                class="px-2 py-1 text-xs font-medium {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'text-red-600' : 'text-gray-500' }} bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 hover:text-gray-900 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                <svg class="h-4 w-4 inline wishlist-icon {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'text-red-600' : '' }}" 
+                                                    aria-hidden="true" xmlns="http://www.w3.org/2000/svg" 
+                                                    fill="{{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'currentColor' : 'none' }}" 
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                        d="M12.01 6.001C6.5 1 1 8 5.782 13.001L12.011 20l6.23-7C23 8 17.5 1 12.01 6.002Z" />
+                                                </svg>
+                                                <span class="sr-only sm:not-sr-only sm:ml-1">{{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'Desfavoritar' : 'Favoritar' }}</span>
+                                            </button>
+                                            
+                                            <!-- Botão de salvar para depois -->
+                                            <form action="{{ route('site.cart.save-for-later', $item->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('PUT')
+                                                <button type="submit" class="px-2 py-1 text-xs font-medium text-gray-500 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-gray-900 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                    <svg class="h-4 w-4 inline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4-4m-4 4-4-4M6 10h12" />
+                                                    </svg>
+                                                    <span class="sr-only sm:not-sr-only sm:ml-1">Salvar</span>
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Botão de remover -->
+                                            <form action="{{ route('site.cart.remove', $item->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-100 hover:text-red-700 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                    <svg class="h-4 w-4 inline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6" />
+                                                    </svg>
+                                                    <span class="sr-only sm:not-sr-only sm:ml-1">Remover</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <div class="bg-white rounded-lg shadow-sm p-6 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-lg font-medium text-gray-900">Seu carrinho está vazio</h3>
+                        <p class="mt-1 text-sm text-gray-500">Parece que você ainda não adicionou nenhum item ao seu carrinho.</p>
+                        <div class="mt-6">
+                            <a href="{{ route('home') }}" class="inline-flex items-center rounded-md border border-transparent bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                Continuar comprando
+                            </a>
+                        </div>
+                    </div>
+                @endif
+                
+                <!-- Itens sem estoque -->
+                @if (count($itemsWithoutStock) > 0)
+                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 mt-6">
+                        <div class="mb-4 border-b pb-4">
+                            <h2 class="text-lg font-semibold text-red-600">Itens sem estoque suficiente ({{ count($itemsWithoutStock) }})</h2>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            @foreach ($itemsWithoutStock as $item)
+                                <div class="border-b border-gray-200 pb-4 mb-4 last:border-b-0 last:mb-0 last:pb-0 bg-red-50 rounded p-3">
+                                    <div class="flex flex-col sm:flex-row gap-4">
+                                        <!-- Imagem do produto (menor em mobile) -->
+                                        <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" class="flex-shrink-0">
+                                            <img class="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded" 
+                                                src="{{ $item->vinylMaster->cover_image }}" 
+                                                alt="{{ $item->vinylMaster->title }}" />
+                                        </a>
+                                        
+                                        <!-- Informações do produto -->
+                                        <div class="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3">
+                                            <!-- Título e artista (ao lado da imagem em mobile) -->
+                                            <div class="flex-1">
+                                                <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" 
+                                                   class="text-base font-medium text-gray-900 hover:text-purple-600 hover:underline">
+                                                    {{ $item->vinylMaster->title }}
+                                                </a>
+                                                <p class="text-sm text-gray-600 mt-1">{{ $item->vinylMaster->artists->first()->name }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">{{ $item->vinylMaster->label }} / {{ $item->vinylMaster->catalog_number }}</p>
+                                                
+                                                <div class="bg-red-100 border border-red-400 text-red-700 px-2 py-1 rounded text-xs mt-2 inline-block">
+                                                    <span class="font-bold">Sem estoque suficiente</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Quantidade e preço -->
+                                            <div class="flex items-center justify-between sm:flex-col sm:items-end sm:min-w-[120px]">
+                                                <!-- Controle de quantidade -->
+                                                <div class="flex items-center">
+                                                    <form action="{{ route('site.cart.update', $item->id) }}" method="POST" class="flex items-center" id="update-form-{{ $item->id }}">
+                                                        @csrf
+                                                        @method('PUT')
+                                                        <button type="button" onclick="decrementQuantity('{{ $item->id }}')" 
+                                                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-white text-gray-500 hover:bg-gray-100">
+                                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                                            </svg>
+                                                        </button>
+                                                        <input type="number" name="quantity" id="quantity-{{ $item->id }}" 
+                                                            class="mx-1 h-6 w-10 rounded border-gray-200 text-center text-sm" 
+                                                            value="{{ $item->quantity }}" min="1" max="{{ min(10, $item->vinylMaster->vinylSec->stock) }}" readonly />
+                                                        <button type="button" onclick="incrementQuantity('{{ $item->id }}')" 
+                                                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-white text-gray-500 hover:bg-gray-100">
+                                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                                
+                                                <!-- Preço -->
+                                                <div class="text-right">
+                                                    <p class="text-base font-bold text-gray-900">{{ number_format($item->vinylMaster->vinylSec->price, 2, ',', '.') }} €</p>
+                                                    @if ($item->vinylMaster->vinylSec->original_price > $item->vinylMaster->vinylSec->price)
+                                                        <p class="text-xs text-gray-500 line-through">{{ number_format($item->vinylMaster->vinylSec->original_price, 2, ',', '.') }} €</p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Botões de ação agrupados (abaixo em mobile, à direita em desktop) -->
+                                    <div class="mt-3 flex justify-end">
+                                        <div class="inline-flex rounded-md shadow-sm" role="group">
+                                            <!-- Botão de favoritos -->
+                                            <button type="button" onclick="toggleWishlist('{{ $item->vinylMaster->id }}', this)" 
+                                                data-vinyl-id="{{ $item->vinylMaster->id }}" 
+                                                class="px-2 py-1 text-xs font-medium {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'text-red-600' : 'text-gray-500' }} bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 hover:text-gray-900 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                <svg class="h-4 w-4 inline wishlist-icon {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'text-red-600' : '' }}" 
+                                                    aria-hidden="true" xmlns="http://www.w3.org/2000/svg" 
+                                                    fill="{{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'currentColor' : 'none' }}" 
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                        d="M12.01 6.001C6.5 1 1 8 5.782 13.001L12.011 20l6.23-7C23 8 17.5 1 12.01 6.002Z" />
+                                                </svg>
+                                                <span class="sr-only sm:not-sr-only sm:ml-1">{{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'Desfavoritar' : 'Favoritar' }}</span>
+                                            </button>
+                                            
+                                            <!-- Botão de salvar para depois -->
+                                            <form action="{{ route('site.cart.save-for-later', $item->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('PUT')
+                                                <button type="submit" class="px-2 py-1 text-xs font-medium text-gray-500 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-gray-900 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                    <svg class="h-4 w-4 inline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4-4m-4 4-4-4M6 10h12" />
+                                                    </svg>
+                                                    <span class="sr-only sm:not-sr-only sm:ml-1">Salvar</span>
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Botão de remover -->
+                                            <form action="{{ route('site.cart.remove', $item->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-100 hover:text-red-700 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                    <svg class="h-4 w-4 inline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6" />
+                                                    </svg>
+                                                    <span class="sr-only sm:not-sr-only sm:ml-1">Remover</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                
+                <!-- Itens salvos para depois -->
+                @if (count($savedItems) > 0)
+                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 mt-6">
+                        <div class="mb-4 border-b pb-4">
+                            <h2 class="text-lg font-semibold">Itens salvos para depois ({{ count($savedItems) }})</h2>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            @foreach ($savedItems as $item)
+                                <div class="border-b border-gray-200 pb-4 mb-4 last:border-b-0 last:mb-0 last:pb-0">
+                                    <div class="flex flex-col sm:flex-row gap-4">
+                                        <!-- Imagem do produto (menor em mobile) -->
+                                        <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" class="flex-shrink-0">
+                                            <img class="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded" 
+                                                src="{{ $item->vinylMaster->cover_image }}" 
+                                                alt="{{ $item->vinylMaster->title }}" />
+                                        </a>
+                                        
+                                        <!-- Informações do produto -->
+                                        <div class="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3">
+                                            <!-- Título e artista (ao lado da imagem em mobile) -->
+                                            <div class="flex-1">
+                                                <a href="{{ route('site.vinyl.show', [$item->vinylMaster->artists->first()->slug, $item->vinylMaster->slug]) }}" 
+                                                   class="text-base font-medium text-gray-900 hover:text-purple-600 hover:underline">
+                                                    {{ $item->vinylMaster->title }}
+                                                </a>
+                                                <p class="text-sm text-gray-600 mt-1">{{ $item->vinylMaster->artists->first()->name }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">{{ $item->vinylMaster->label }} / {{ $item->vinylMaster->catalog_number }}</p>
+                                                
+                                                @if ($item->vinylMaster->vinylSec->stock <= 0)
+                                                    <div class="bg-red-100 border border-red-400 text-red-700 px-2 py-1 rounded text-xs mt-2 inline-block">
+                                                        <span class="font-bold">Sem estoque</span>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            
+                                            <!-- Preço -->
+                                            <div class="flex items-center justify-between sm:flex-col sm:items-end sm:min-w-[120px]">
+                                                <div class="text-right">
+                                                    <p class="text-base font-bold text-gray-900">{{ number_format($item->vinylMaster->vinylSec->price, 2, ',', '.') }} €</p>
+                                                    @if ($item->vinylMaster->vinylSec->original_price > $item->vinylMaster->vinylSec->price)
+                                                        <p class="text-xs text-gray-500 line-through">{{ number_format($item->vinylMaster->vinylSec->original_price, 2, ',', '.') }} €</p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Botões de ação agrupados (abaixo em mobile, à direita em desktop) -->
+                                    <div class="mt-3 flex justify-end">
+                                        <div class="inline-flex rounded-md shadow-sm" role="group">
+                                            <!-- Botão de favoritos -->
+                                            <button type="button" onclick="toggleWishlist('{{ $item->vinylMaster->id }}', this)" 
+                                                data-vinyl-id="{{ $item->vinylMaster->id }}" 
+                                                class="px-2 py-1 text-xs font-medium {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'text-red-600' : 'text-gray-500' }} bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 hover:text-gray-900 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                <svg class="h-4 w-4 inline wishlist-icon {{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'text-red-600' : '' }}" 
+                                                    aria-hidden="true" xmlns="http://www.w3.org/2000/svg" 
+                                                    fill="{{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'currentColor' : 'none' }}" 
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                        d="M12.01 6.001C6.5 1 1 8 5.782 13.001L12.011 20l6.23-7C23 8 17.5 1 12.01 6.002Z" />
+                                                </svg>
+                                                <span class="sr-only sm:not-sr-only sm:ml-1">{{ in_array($item->vinylMaster->id, $wishlistItems ?? []) ? 'Desfavoritar' : 'Favoritar' }}</span>
+                                            </button>
+                                            
+                                            <!-- Botão de mover para o carrinho -->
+                                            <form action="{{ route('site.cart.move-to-cart', $item->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('PUT')
+                                                <button type="submit" class="px-2 py-1 text-xs font-medium text-purple-600 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-purple-800 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                    <svg class="h-4 w-4 inline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7" />
+                                                    </svg>
+                                                    <span class="sr-only sm:not-sr-only sm:ml-1">Mover para carrinho</span>
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Botão de remover -->
+                                            <form action="{{ route('site.cart.remove', $item->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-100 hover:text-red-700 focus:z-10 focus:ring-2 focus:ring-purple-500">
+                                                    <svg class="h-4 w-4 inline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6" />
+                                                    </svg>
+                                                    <span class="sr-only sm:not-sr-only sm:ml-1">Remover</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+            
+            <!-- Coluna da direita - Resumo do pedido -->
+            <div class="lg:col-span-1">
+                @if (count($cartItems) > 0)
+                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 lg:sticky lg:top-4">
+                        <h2 class="text-lg font-semibold mb-4 border-b pb-4">Resumo do Pedido</h2>
+                        
+                        <!-- Aplicar cupom -->
+                        <div class="mb-6">
+                            <form action="{{ route('site.cart.apply-coupon') }}" method="POST" class="flex">
+                                @csrf
+                                <input type="text" name="coupon_code" placeholder="Código do cupom" 
+                                    class="flex-1 rounded-l-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500 text-sm" />
+                                <button type="submit" 
+                                    class="inline-flex items-center rounded-r-lg border border-transparent bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                    Aplicar
+                                </button>
+                            </form>
+                            
+                            @if (session('coupon_error'))
+                                <div class="mt-2 text-sm text-red-600">
+                                    {{ session('coupon_error') }}
+                                </div>
                             @endif
-                          </dd>
-                        </dl>
-
-
-                      </li>
-
-
-                      <li class="flex flex-wrap gap-4 text-sm">
+                            
+                            @if (session('coupon_success'))
+                                <div class="mt-2 text-sm text-green-600">
+                                    {{ session('coupon_success') }}
+                                </div>
+                            @endif
+                        </div>
                         
-                      
-
-                        </li>
-
-
-                        <li class="flex flex-wrap gap-4 text-sm">
+                        <!-- Detalhes do preço -->
+                        <div class="space-y-2 mb-6">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Subtotal:</span>
+                                <span class="font-medium">R$ {{ number_format($cartTotal, 2, ',', '.') }}</span>
+                            </div>
+                            
+                            @if (isset($discount) && $discount > 0)
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Desconto:</span>
+                                    <span class="font-medium text-green-600">-R$ {{ number_format($discount, 2, ',', '.') }}</span>
+                                </div>
+                            @endif
+                            
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Frete:</span>
+                                <span class="font-medium">Calculado no checkout</span>
+                            </div>
+                            
+                            <div class="border-t border-gray-200 pt-2 mt-2">
+                                <div class="flex justify-between">
+                                    <span class="text-base font-semibold">Total:</span>
+                                    <span class="text-base font-bold">R$ {{ number_format($cartTotal - $discount, 2, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        </div>
                         
-
-
-                        </li>
-
-                        <li class="flex flex-wrap gap-4 text-sm">
+                        <!-- Botões de ação -->
+                        <div class="space-y-3">
+                            <a href="{{ route('site.shipping.index') }}" 
+                                class="flex w-full items-center justify-center rounded-md border border-transparent bg-purple-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                Finalizar Compra
+                            </a>
+                            
+                            <a href="{{ route('home') }}" 
+                                class="flex w-full items-center justify-center rounded-md border border-purple-600 px-5 py-2.5 text-sm font-medium text-purple-600 hover:bg-gray-50">
+                                Continuar Comprando
+                            </a>
+                        </div>
                         
-
-
-                        </li>
-                      <hr class="border-slate-300" />
-                      <li class="flex flex-wrap gap-4 text-sm font-semibold text-slate-900">Total <span class="ml-auto">@php
-                  $totalValue = $cartTotal;
-                  if (isset($selectedShipping)) {
-                    $totalValue += $selectedShipping['price'] ?? 0;
-                  }
-                  if (isset($discount) && $discount > 0) {
-                    $totalValue -= $discount;
-                  }
-                @endphp
-                R$ {{ number_format($totalValue, 2, ',', '.') }}</span>
-                  </li>
-              </ul>
-                  <div class="mt-8 space-y-4">
-                  <form action="{{ route('site.checkout.index') }}" method="GET" id="checkout-form">
-                    <button type="submit" class="flex w-full items-center justify-center rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 {{ isset($selectedShipping) ? '' : 'opacity-50 cursor-not-allowed' }}" {{ isset($selectedShipping) ? '' : 'disabled' }}>
-                      Finalizar Compra
-                    </button>
-                  </form>
-
-
-                  <span class="text-sm font-normal text-gray-500 dark:text-gray-400">ou</span>
-                    <a href="{{ route('home') }}" title="" class="inline-flex items-center gap-2 text-sm font-medium text-purple-600 underline hover:no-underline">
-                      Continuar Comprando
-                      <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m14 0-4 4m4-4-4-4" />
-                      </svg>
-                    </a>
-                      <button type="button" class="text-sm px-4 py-2.5 w-full font-medium tracking-wide bg-slate-800 hover:bg-slate-900 text-white rounded-md cursor-pointer">Buy Now</button>
-                      <button type="button" class="text-sm px-4 py-2.5 w-full font-medium tracking-wide bg-slate-50 hover:bg-slate-100 text-slate-900 border border-gray-300 rounded-md cursor-pointer">Continue Shopping</button>
-                  </div>
-                  <div class="mt-5 flex flex-wrap justify-center gap-4">
-                      <img src='https://readymadeui.com/images/master.webp' alt="card1" class="w-10 object-contain" />
-                      <img src='https://readymadeui.com/images/visa.webp' alt="card2" class="w-10 object-contain" />
-                      <img src='https://readymadeui.com/images/american-express.webp' alt="card3" class="w-10 object-contain" />
-                  </div>
-              </div>
-          </div>
-      </div>
-
-
-
-
-
-
- 
-
-      
-
-
-
-          
-
-
-
-
-
-   
-        <x-address-modal route="site.profile.address-modal.store" />
-    
-    <!-- Os scripts para manipulação de endereços foram movidos para o final da página para evitar conflitos -->
+                        <!-- Informações adicionais -->
+                        <div class="mt-6 text-xs text-gray-500">
+                            <p>Formas de pagamento aceitas:</p>
+                            <div class="flex gap-2 mt-2">
+                                <span class="bg-gray-100 p-1 rounded">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="24" height="24" rx="4" fill="#1434CB"/>
+                                        <path d="M9.5 15.7L6 12.1L7.1 11L9.5 13.4L16.9 6L18 7.1L9.5 15.7Z" fill="white"/>
+                                    </svg>
+                                </span>
+                                <span class="bg-gray-100 p-1 rounded">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="24" height="24" rx="4" fill="#FF5F00"/>
+                                        <circle cx="8" cy="12" r="4" fill="#EB001B"/>
+                                        <circle cx="16" cy="12" r="4" fill="#F79E1B"/>
+                                    </svg>
+                                </span>
+                                <span class="bg-gray-100 p-1 rounded">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="24" height="24" rx="4" fill="#006FCF"/>
+                                        <path d="M12 6L14 10H10L12 6Z" fill="white"/>
+                                        <path d="M12 18L10 14H14L12 18Z" fill="white"/>
+                                    </svg>
+                                </span>
+                                <span class="bg-gray-100 p-1 rounded">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="24" height="24" rx="4" fill="#4D4D4D"/>
+                                        <path d="M7 12H17M12 7V17" stroke="white" stroke-width="2"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
     
     <!-- Carregando os scripts do carrinho -->
     <script src="{{ asset('js/cart.js') }}"></script>

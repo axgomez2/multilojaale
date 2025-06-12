@@ -100,7 +100,8 @@ class CartItem extends Model
         if ($this->product) {
             // Para produtos do tipo VinylMaster
             if ($this->product->productable_type === 'App\\Models\\VinylMaster' && $this->product->vinylSec) {
-                return $this->product->vinylSec->stock >= $this->quantity;
+                // Verificar se o estoque é maior que zero E suficiente para a quantidade solicitada
+                return $this->product->vinylSec->stock > 0 && $this->product->vinylSec->stock >= $this->quantity;
             }
             
             // Para outros tipos de produtos, implementar lógica específica aqui
@@ -109,7 +110,8 @@ class CartItem extends Model
         
         // Retrocompatibilidade
         if ($this->vinylMaster && $this->vinylMaster->vinylSec) {
-            return $this->vinylMaster->vinylSec->stock >= $this->quantity;
+            // Verificar se o estoque é maior que zero E suficiente para a quantidade solicitada
+            return $this->vinylMaster->vinylSec->stock > 0 && $this->vinylMaster->vinylSec->stock >= $this->quantity;
         }
         
         return false;

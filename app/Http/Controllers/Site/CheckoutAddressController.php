@@ -121,11 +121,20 @@ class CheckoutAddressController extends Controller
             // Manter o usuário na etapa de endereço para que ele possa confirmar
             session(['checkout_step' => 'address']);
             
+            // Verificar se a solicitação veio da página de shipping
+            $referer = request()->headers->get('referer');
+            $redirectRoute = route('site.checkout.index', [], false);
+            
+            // Se a solicitação veio da página de shipping, redirecionar de volta para shipping
+            if ($referer && strpos($referer, 'shipping') !== false) {
+                $redirectRoute = route('site.shipping.index', [], false);
+            }
+            
             return response()->json([
                 'success' => true,
                 'address' => $address,
                 'message' => 'Endereço salvo com sucesso.',
-                'redirect' => route('site.checkout.index', [], false) // false para evitar a interrogação
+                'redirect' => $redirectRoute // false para evitar a interrogação
             ]);
             
         } catch (\Exception $e) {
